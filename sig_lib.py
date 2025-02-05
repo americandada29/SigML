@@ -73,12 +73,27 @@ def get_real_giws():
   return iws, Giws
 
 
-def write_gxs(all_iws, all_sigs):
+## Expects (5xM) with 5 orbitals and M being number of matsubara points
+def proj_sig_full_matsubara(iws, sigs):
+  msig = np.zeros((sigs.shape[0], 2*sigs.shape[1])).astype(np.complex128)
+  for i in range(len(sigs)):
+    msig[i, sigs.shape[1]:] = sigs[i]
+    msig[i, :sigs.shape[1]] = np.flip(np.conjugate(sigs[i]))
+  e_iws = np.zeros(2*len(iws))
+  e_iws[:len(iws)] = -np.flip(iws)
+  e_iws[len(iws):] = iws 
+
+  return e_iws, msig
+
+
+
+def write_gxs():
+  all_iws, all_sigs = get_sigs()
   all_gxs = []
   for a in range(len(all_sigs)):
     sigs = all_sigs[a]
     iws = all_iws[a]
-    Gxs = np.zeros((sigs.shape[0], sigs.shape[1], 19)).astype(np.complex128)
+    Gxs = np.zeros((sigs.shape[0], sigs.shape[1], 38)).astype(np.complex128)
     for i in range(sigs.shape[0]):
       for j in range(sigs.shape[1]):
         msig = np.zeros((2*sigs.shape[2], 1, 1)).astype(np.complex128)
@@ -88,7 +103,7 @@ def write_gxs(all_iws, all_sigs):
         e_iws[:len(iws)] = -np.flip(iws)
         e_iws[len(iws):] = iws 
 
-        Emax, beta = 10, np.pi/iws[0]
+        Emax, beta = 100, np.pi/iws[0]
         d = dlr(lamb = Emax*beta, eps=1e-10)
         Gx = d.lstsq_dlr_from_matsubara(1j*e_iws, msig, beta)
         Gxs[i,j] = Gx[:,0,0]
@@ -100,10 +115,9 @@ def write_gxs(all_iws, all_sigs):
 
 def read_gxs():
   all_iws, all_sigs = get_sigs()
-  with open("all_gxs.pkl","rb") as f:
+  with open("old_all_gxs.pkl","rb") as f:
     all_gxs = pickle.load(f)
   return all_iws, all_gxs
-
 
 
 
