@@ -6,6 +6,7 @@ import os
 import torch
 import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
+import torch.nn.functional as F
 # from torchvision import transforms, utils
 
 
@@ -78,12 +79,14 @@ def create_dataset(fps, gxs, device="cpu"):
     for i in range(len(fps)):
         for j in range(len(fps[i][0])):
             xs.append(fps[i][0][j])
-            ys.append(custom_renorm(gxs[i][j]))
+            # ys.append(custom_renorm(gxs[i][j]))
             # ys.append(gxs[i][j])
+            ys.append(gxs[i][j][0])
     xs = np.array(xs)
     ys = np.array(ys)
     xs = torch.Tensor.float(torch.from_numpy(xs)).to(device)
     ys = torch.from_numpy(ys).to(device)
+
     dataset = SigmlDataset(xs, ys)
     return dataset
 
@@ -93,48 +96,39 @@ def complex_mse_loss(output, target):
 
 
 class RealToComplexCNN(nn.Module):
-    def __init__(self, input_dim=50, output_shape=(5, 110), latent_channels=128, dropout_prob=0.3):
-        """
-        Maps a 1D real vector (length input_dim) to a 2D complex matrix of shape (5, 110).
-        Uses a fully connected layer to project the input to a latent space of shape (latent_channels, 5, 110),
-        then applies a 2D convolution with a (1x10) kernel to scan vertically across each row.
-        """
+    def __init__(self, input_length=50, output_length=110, num_filters=32):
         super(RealToComplexCNN, self).__init__()
-        self.output_shape = output_shape  # (rows, columns) = (5, 110)
-        self.num_rows = output_shape[0]   # 5 rows
-        self.num_cols = output_shape[1]   # 110 columns
-        self.latent_channels = latent_channels
+        self.input_length = input_length
+        self.output_length = output_length
 
-        # Fully connected layer: projects input to (batch, latent_channels, 5, 110)
-        self.fc = nn.Sequential(
-            nn.Linear(input_dim, self.num_rows * self.num_cols * latent_channels),
-            nn.ReLU(inplace=True),
-            nn.Dropout(dropout_prob)
-        )
+        # 1D Convolution Layers
+        self.conv1 = nn.Conv1d(in_channels=1, out_channels=num_filters, kernel_size=5, stride=1, padding=2)
+        self.conv2 = nn.Conv1d(in_channels=num_filters, out_channels=num_filters, kernel_size=5, stride=1, padding=2)
+        self.batchnorm = nn.BatchNorm1d(num_filters)
+        self.fc = nn.Linear(input_length * num_filters, output_length)
 
-        # 2D convolution block with a (1x10) kernel scanning vertically across each row
-        self.conv2d = nn.Sequential(
-            nn.Conv2d(in_channels=latent_channels, out_channels=2, kernel_size=(1, 9), stride=1, padding=(0, 4)),
-            nn.BatchNorm2d(2),
-            nn.LeakyReLU(0.2, inplace=True),
-            nn.Dropout(dropout_prob)
-        )
+        self.conv3 = nn.Conv1d(in_channels=1, out_channels=num_filters, kernel_size=5, stride=1, padding=2)
+        self.conv4 = nn.Conv1d(in_channels=num_filters, out_channels=num_filters, kernel_size=5, stride=1, padding=2)
+        self.batchnorm2 = nn.BatchNorm1d(num_filters)
+        self.fc2 = nn.Linear(input_length * num_filters, output_length)
 
     def forward(self, x):
         batch_size = x.shape[0]
-        
-        # Fully connected transformation: project input to (batch, 5*110*latent_channels)
-        x = self.fc(x)
-        x = x.view(batch_size, self.latent_channels, self.num_rows, self.num_cols)  # Reshape to (batch, latent, 5, 110)
+        x = x.view(x.shape[0], 1, x.shape[1])
+ 
+        x1 = F.relu(self.conv1(x))  # (batch_size, num_filters, 50)
+        x1 = F.relu(self.batchnorm(self.conv2(x1)))  # (batch_size, num_filters, 50)
+        x1 = x1.view(batch_size, -1)  # Shape: (batch_size, 50 * num_filters)
+        x1 = self.fc(x1)  # Shape: (batch_size, 110)
 
-        # Apply the 2D convolution block
-        x = self.conv2d(x)  # Output: (batch, 2, 5, 110)
+        x2 = F.relu(self.conv3(x))  # (batch_size, num_filters, 50)
+        x2 = F.relu(self.batchnorm2(self.conv4(x2)))  # (batch_size, num_filters, 50)
+        x2 = x2.view(batch_size, -1)  # Shape: (batch_size, 50 * num_filters)
+        x2 = self.fc(x2)  # Shape: (batch_size, 110)
+  
+        y = torch.complex(x1, x2)
 
-        # Split into real and imaginary parts and combine into a complex tensor.
-        real_part = x[:, 0, :, :]  # Shape: (batch, 5, 110)
-        imag_part = x[:, 1, :, :]  # Shape: (batch, 5, 110)
-        complex_output = torch.complex(real_part, imag_part)
-        return complex_output.to(torch.complex128) 
+        return y.to(torch.complex128)
 
 
 

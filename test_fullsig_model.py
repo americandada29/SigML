@@ -43,10 +43,10 @@ for x, y in test_dataloader:
     output = model(x).detach().numpy()[0]
 
     fig, axs = plt.subplots(2)
-    axs[0].plot(test_iws[0], output[0].imag, marker="o", c="blue")
-    axs[0].plot(test_iws[0], y[0][0].imag, marker="o", c="red")
-    axs[1].plot(test_iws[0], output[0].real, marker="o", c="blue")
-    axs[1].plot(test_iws[0], y[0][0].real, marker="o", c="red")
+    axs[0].plot(test_iws[0], output.imag, marker="o", c="blue")
+    axs[0].plot(test_iws[0], y[0].imag, marker="o", c="red")
+    axs[1].plot(test_iws[0], output.real, marker="o", c="blue")
+    axs[1].plot(test_iws[0], y[0].real, marker="o", c="red")
     plt.show()
     exit()
     
