@@ -151,7 +151,7 @@ class SigInfModel(nn.Module):
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    with open("../atoms_fingerprints.pkl","rb") as f:
+    with open("atoms_fingerprints.pkl","rb") as f:
         atoms, fps = pickle.load(f)
     all_sinfs, all_edcs = sig_lib.get_sinf_edc()
 

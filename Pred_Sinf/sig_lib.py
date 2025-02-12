@@ -123,8 +123,9 @@ def read_gxs():
 def get_sinf_edc():
   all_sinfs = []
   all_edcs = []
-  for fi in os.listdir("../DMFT_SIGS"):
-    with open("../DMFT_SIGS/" + fi, "rb") as f:
+  sinffiles = sorted(os.listdir("Sinf_data"), key = lambda x: int(x.split("_")[0]))
+  for fi in sinffiles:
+    with open("Sinf_Data/" + fi, "rb") as f:
         atoms, sigs = pickle.load(f)
     for k in range(len(sigs)):
       data = sigs[k].split("\n")
@@ -141,6 +142,26 @@ def get_sinf_edc():
 
   return all_sinfs, all_edcs
     
+
+def get_atoms_sinfs():
+  all_sinfs = []
+  all_atoms = []
+
+  sinffiles = sorted(os.listdir("Sinf_data"), key = lambda x: int(x.split("_")[0]))
+  for fi in sinffiles:
+    with open("Sinf_Data/" + fi, "rb") as f:
+        atoms, sigs = pickle.load(f)
+        all_atoms.extend(atoms)
+    for k in range(len(sigs)):
+      data = sigs[k].split("\n")
+      sinf = eval(data[0].split("=")[1].strip())
+      ao_sinf = np.zeros((4, 5)).astype(np.float64)
+      for i in range(4):
+        for j in range(5):
+            ao_sinf[i,j] = sinf[5*i + j]
+      all_sinfs.append(ao_sinf)
+
+  return all_atoms, all_sinfs
 
 ### Keep in note that for now everything is set up for receiving one structure's green's function and self energy
 
@@ -163,6 +184,125 @@ def get_sinf_edc():
 
 
 
+
+
+def get_rcovdata():
+    dat = \
+    [[ 0  , "X" , 1.0],
+    [ 1  , "H"  , 0.37],
+    [ 2  , "He" , 0.32],
+    [ 3  , "Li" , 1.34],
+    [ 4  , "Be" , 0.90],
+    [ 5  , "B"  , 0.82],
+    [ 6  , "C"  , 0.77],
+    [ 7  , "N"  , 0.75],
+    [ 8  , "O"  , 0.73],
+    [ 9  , "F"  , 0.71],
+    [ 10 , "Ne" , 0.69],
+    [ 11 , "Na" , 1.54],
+    [ 12 , "Mg" , 1.30],
+    [ 13 , "Al" , 1.18],
+    [ 14 , "Si" , 1.11],
+    [ 15 , "P"  , 1.06],
+    [ 16 , "S"  , 1.02],
+    [ 17 , "Cl" , 0.99],
+    [ 18 , "Ar" , 0.97],
+    [ 19 , "K"  , 1.96],
+    [ 20 , "Ca" , 1.74],
+    [ 21 , "Sc" , 1.44],
+    [ 22 , "Ti" , 1.36],
+    [ 23 , "V"  , 1.25],
+    [ 24 , "Cr" , 1.27],
+    [ 25 , "Mn" , 1.39],
+    [ 26 , "Fe" , 1.25],
+    [ 27 , "Co" , 1.26],
+    [ 28 , "Ni" , 1.21],
+    [ 29 , "Cu" , 1.38],
+    [ 30 , "Zn" , 1.31],
+    [ 31 , "Ga" , 1.26],
+    [ 32 , "Ge" , 1.22],
+    [ 33 , "As" , 1.19],
+    [ 34 , "Se" , 1.16],
+    [ 35 , "Br" , 1.14],
+    [ 36 , "Kr" , 1.10],
+    [ 37 , "Rb" , 2.11],
+    [ 38 , "Sr" , 1.92],
+    [ 39 , "Y"  , 1.62],
+    [ 40 , "Zr" , 1.48],
+    [ 41 , "Nb" , 1.37],
+    [ 42 , "Mo" , 1.45],
+    [ 43 , "Tc" , 1.56],
+    [ 44 , "Ru" , 1.26],
+    [ 45 , "Rh" , 1.35],
+    [ 46 , "Pd" , 1.31],
+    [ 47 , "Ag" , 1.53],
+    [ 48 , "Cd" , 1.48],
+    [ 49 , "In" , 1.44],
+    [ 50 , "Sn" , 1.41],
+    [ 51 , "Sb" , 1.38],
+    [ 52 , "Te" , 1.35],
+    [ 53 , "I"  , 1.33],
+    [ 54 , "Xe" , 1.30],
+    [ 55 , "Cs" , 2.25],
+    [ 56 , "Ba" , 1.98],
+    [ 57 , "La" , 1.80],
+    [ 58 , "Ce" , 1.63],
+    [ 59 , "Pr" , 1.76],
+    [ 60 , "Nd" , 1.74],
+    [ 61 , "Pm" , 1.73],
+    [ 62 , "Sm" , 1.72],
+    [ 63 , "Eu" , 1.68],
+    [ 64 , "Gd" , 1.69],
+    [ 56 , "Tb" , 1.68],
+    [ 66 , "Dy" , 1.67],
+    [ 67 , "Ho" , 1.66],
+    [ 68 , "Er" , 1.65],
+    [ 69 , "Tm" , 1.64],
+    [ 70 , "Yb" , 1.70],
+    [ 71 , "Lu" , 1.60],
+    [ 72 , "Hf" , 1.50],
+    [ 73 , "Ta" , 1.38],
+    [ 74 , "W"  , 1.46],
+    [ 75 , "Re" , 1.59],
+    [ 76 , "Os" , 1.28],
+    [ 77 , "Ir" , 1.37],
+    [ 78 , "Pt" , 1.28],
+    [ 79 , "Au" , 1.44],
+    [ 80 , "Hg" , 1.49],
+    [ 81 , "Tl" , 1.48],
+    [ 82 , "Pb" , 1.47],
+    [ 83 , "Bi" , 1.46],
+    [ 84 , "Po" , 1.45],
+    [ 85 , "At" , 1.47],
+    [ 86 , "Rn" , 1.42],
+    [ 87 , "Fr" , 2.23],
+    [ 88 , "Ra" , 2.01],
+    [ 89 , "Ac" , 1.86],
+    [ 90 , "Th" , 1.75],
+    [ 91 , "Pa" , 1.69],
+    [ 92 , "U"  , 1.70],
+    [ 93 , "Np" , 1.71],
+    [ 94 , "Pu" , 1.72],
+    [ 95 , "Am" , 1.66],
+    [ 96 , "Cm" , 1.66],
+    [ 97 , "Bk" , 1.68],
+    [ 98 , "Cf" , 1.68],
+    [ 99 , "Es" , 1.65],
+    [ 100, "Fm" , 1.67],
+    [ 101, "Md" , 1.73],
+    [ 102, "No" , 1.76],
+    [ 103, "Lr" , 1.61],
+    [ 104, "Rf" , 1.57],
+    [ 105, "Db" , 1.49],
+    [ 106, "Sg" , 1.43],
+    [ 107, "Bh" , 1.41],
+    [ 108, "Hs" , 1.34],
+    [ 109, "Mt" , 1.29],
+    [ 110, "Ds" , 1.28],
+    [ 111, "Rg" , 1.21],
+    [ 112, "Cn" , 1.22]]
+
+    return dat
 
 
 

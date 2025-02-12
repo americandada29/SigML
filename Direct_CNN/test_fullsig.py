@@ -41,9 +41,9 @@ test_iws = all_iws[80:]
 
 
 model = FullRealToComplexCNN().to(device)
-model.load_state_dict(torch.load("fullsig_cnn.pth", weights_only=True))
+model.load_state_dict(torch.load("fullsig_cnn.pth", weights_only=True, map_location=torch.device(device)))
 
-test_dataset = create_dataset(test_fps, test_gxs, device="cuda")
+test_dataset = create_dataset(test_fps, test_gxs, device=device)
 test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=True)
 
 for x, y in test_dataloader:

@@ -23,9 +23,11 @@ def plot_matsubara(iws, sigs, atom, orbital):
 
 
 
-with open("../atoms_fingerprints.pkl","rb") as f:
+with open("atoms_fingerprints.pkl","rb") as f:
     atoms, fps = pickle.load(f)
+
 all_sinfs, all_edcs = sig_lib.get_sinf_edc()
+
 
 test_fps = fps[80:]
 test_sinfs = all_sinfs[80:]
