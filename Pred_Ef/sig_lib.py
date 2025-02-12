@@ -144,7 +144,8 @@ def get_sinf_edc():
 
 def get_efs():
   all_atoms, all_efs = [], []
-  for fi in os.listdir("Data/"):
+  #for fi in os.listdir("Data/"):
+  for fi in ["rattle_a_e.pkl"]:
     with open("Data/" + fi, "rb") as f:
       atoms, efs = pickle.load(f)
     all_atoms.extend(atoms)

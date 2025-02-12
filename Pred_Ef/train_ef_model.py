@@ -101,14 +101,16 @@ def create_dataset(fps, gxs, mean=None, std=None, device="cpu"):
 class SigInfModel(nn.Module):
     def __init__(self, input_length = 50, output_length = 1, atoms=4, num_filters=100, fc_bias=True):
         super(SigInfModel, self).__init__()
-        self.conv1d = nn.Conv1d(in_channels = 4, out_channels = 1, kernel_size = 50)
-        self.batchnorm = nn.BatchNorm1d(1, affine=False)
-        self.fc1 = nn.Linear(1, 1)
+        self.conv1d = nn.Conv1d(in_channels = 4, out_channels = 2, kernel_size = 26)
+        self.conv1d1 = nn.Conv1d(in_channels = 2, out_channels = 1, kernel_size = 16)
+        self.batchnorm = nn.BatchNorm1d(1, affine=True)
+        self.dropout = nn.Dropout(p=0.5)
+        self.fc1 = nn.Linear(10, 1)
 
     def forward(self, x):
         # y = F.relu(self.batchnorm(self.conv1d(x)))
         y = F.relu(self.conv1d(x))
-        y = y.view(-1, 1)
+        y = F.tanh(self.dropout(self.batchnorm(self.conv1d1(y))))
         y = self.fc1(y)
         return y
 
@@ -172,7 +174,7 @@ if __name__ == "__main__":
     dmean = np.mean(all_efs)
     dstd = np.std(all_efs)
 
-    all_efs = (all_efs - dmean)
+    all_efs = (all_efs - dmean)/dstd
     
 
 
@@ -203,7 +205,7 @@ if __name__ == "__main__":
 
 
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=10.0)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5)
     epochs = 100
@@ -229,7 +231,7 @@ if __name__ == "__main__":
                 # print("##################################")
                 vloss += loss_fn(val_output, valt)
             count += 1
-        scheduler.step(vloss)
+        #scheduler.step(vloss)
         # if epoch % 50 == 0:
         print(f"Epoch {epoch}, Training Loss: {tloss/count:.6f}, Validation Loss: {vloss/len(val_dataset)}")
         # losses.append(tloss/count)
