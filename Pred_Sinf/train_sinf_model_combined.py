@@ -113,15 +113,18 @@ class SigInfModel(nn.Module):
         return y
 
 class FullCNNModel(nn.Module):
-    def __init__(self, input_channels = 4, input_length=50, output_channels=4, output_length=5):
+    def __init__(self, input_channels = 4, input_length=50, output_channels=4, output_length=1):
         super(FullCNNModel, self).__init__()
-        self.conv1 = nn.Conv1d(in_channels=input_channels, out_channels=output_channels, groups=input_channels, kernel_size=46)
-        self.batchnorm = nn.BatchNorm1d(input_channels)
+        #self.conv1 = nn.Conv1d(in_channels=input_channels, out_channels=output_channels, kernel_size=46)
+        #self.batchnorm = nn.BatchNorm1d(input_channels)
+        #self.output_channels = output_channels
         #self.fc = nn.Linear(50 * 5, ) 
+
+
+        
     def forward(self, x):
         y = F.tanh(self.conv1(x))
-        print(y.shape)
-        exit()
+        #y = y.view((len(x), 1, self.output_channels))
         return y
 
 
@@ -166,11 +169,9 @@ class FullCNNModel(nn.Module):
 
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
-
-    with open("../atoms_fingerprints.pkl","rb") as f:
+    with open("atoms_fingerprints.pkl","rb") as f:
         atoms, fps = pickle.load(f)
     all_sinfs, all_edcs = sig_lib.get_sinf_edc()
-
 
     inds = np.arange(0, len(atoms))
     np.random.shuffle(inds)
@@ -179,9 +180,12 @@ if __name__ == "__main__":
     for i, ind in enumerate(inds):
         newatoms.append(atoms[ind])
         newsinfs.append(all_sinfs[ind])
-    all_sinfs = newsinfs
+    all_sinfs = np.array(newsinfs)
     atoms = newatoms
 
+    means = np.mean(all_sinfs, axis=0)
+    stds = np.std(all_sinfs, axis=0)
+    all_sinfs = (all_sinfs - means)/stds
 
     tts = 0.9
     N = int(len(atoms)*tts)
@@ -208,7 +212,7 @@ if __name__ == "__main__":
 
 
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=1.0)
     #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
     scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5)
     epochs = 50
@@ -237,6 +241,8 @@ if __name__ == "__main__":
 
     torch.save(model.state_dict(), "siginf_ann_combined.pth")
 
+    with open("test_data_combined.pkl","wb") as f:
+        pickle.dump([val_fps, val_sinfs], f)
     # plt.plot(losses, marker="o")
     # plt.show()
 

@@ -106,7 +106,7 @@ class SigInfModel(nn.Module):
         self.fc2 = nn.Linear(num_filters, output_length, bias=fc_bias).double()
 
     def forward(self, x):
-        y = F.relu(self.fc1(x))
+        y = F.tanh(self.fc1(x))
         y = self.fc2(y)
         return y
 
@@ -162,9 +162,12 @@ if __name__ == "__main__":
     for i, ind in enumerate(inds):
         newatoms.append(atoms[ind])
         newsinfs.append(all_sinfs[ind])
-    all_sinfs = newsinfs
+    all_sinfs = np.array(newsinfs)
     atoms = newatoms
 
+    means = np.mean(all_sinfs, axis=0)
+    stds = np.std(all_sinfs, axis=0)
+    all_sinfs = (all_sinfs - means)/stds
 
     tts = 0.9
     N = int(len(atoms)*tts)
@@ -194,9 +197,9 @@ if __name__ == "__main__":
 
 
 
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.01)
     #scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
-    scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5)
+    #scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=5)
     epochs = 50
     losses = []
     loss_fn = nn.MSELoss()
@@ -216,13 +219,14 @@ if __name__ == "__main__":
                 val_output = model(vali)
                 vloss += loss_fn(val_output, valt)
             count += 1
-        scheduler.step(vloss)
+        #scheduler.step(vloss)
         # if epoch % 50 == 0:
         print(f"Epoch {epoch}, Training Loss: {tloss/count:.6f}, Validation Loss: {vloss/len(val_dataset)}")
         # losses.append(tloss/count)
 
     torch.save(model.state_dict(), "siginf_ann.pth")
-
+    with open("test_data.pkl","wb") as f:
+        pickle.dump([val_fps, val_sinfs], f)
     # plt.plot(losses, marker="o")
     # plt.show()
 

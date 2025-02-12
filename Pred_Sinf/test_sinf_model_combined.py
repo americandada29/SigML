@@ -21,15 +21,19 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
 
 
-with open("../atoms_fingerprints.pkl","rb") as f:
-    atoms, fps = pickle.load(f)
-all_sinfs, all_edcs = sig_lib.get_sinf_edc()
+#with open("../atoms_fingerprints.pkl","rb") as f:
+#    atoms, fps = pickle.load(f)
+#all_sinfs, all_edcs = sig_lib.get_sinf_edc()
+#
+#
+#tts = 0.9
+#N = int(len(atoms)*tts)
+#test_fps = fps[N:]
+#test_sinfs = all_sinfs[N:]
 
+with open("test_data_combined.pkl","rb") as f:
+    test_fps, test_sinfs = pickle.load(f)
 
-tts = 0.9
-N = int(len(atoms)*tts)
-test_fps = fps[N:]
-test_sinfs = all_sinfs[N:]
 
 #model = SigInfModel().double()
 model = FullCNNModel().double().to(device)
@@ -41,6 +45,8 @@ test_dataloader = DataLoader(test_dataset, batch_size=1, shuffle=False)
 adiff = 0
 for x, y in test_dataloader:
     output = model(x).detach().numpy()[0]
+    print(output.shape, y[0].shape)
+    exit()
     adiff += np.abs(y[0].numpy() - output)
     print(y[0].numpy() - output)
     print(y[0].numpy())
