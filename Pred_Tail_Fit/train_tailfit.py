@@ -76,11 +76,13 @@ def create_dataset(fps, gxs, device="cpu"):
     xs = []
     ys = []
     for i in range(len(fps)):
-        for j in range(len(fps[i][0])):
-            xs.append(fps[i][0][j])
+        for j in range(len(fps[i])):
+            xs.append(fps[i][j])
             # ys.append(custom_renorm(gxs[i][j]))
             # ys.append(gxs[i][j])
-            ys.append(gxs[i][j])
+            ys.append(gxs[i][j][0])
+        # xs.append(fps[i])
+        # ys.append(gxs[i])
     xs = np.array(xs)
     ys = np.array(ys)
 
@@ -155,17 +157,34 @@ def complex_mse_loss(output, target):
 
 
 
+# class FullRealToComplexCNN(nn.Module):
+#     def __init__(self, input_length=100, output_length=5, num_filters=25):
+#         super(FullRealToComplexCNN, self).__init__()
+#         self.conv1 = nn.Conv1d(in_channels = 4, out_channels = 4, kernel_size = int(input_length/2 + 1))
+#         self.conv2 = nn.Conv1d(in_channels=4, out_channels=4, kernel_size=int(input_length/2) - 5 + 1)
+#         self.batchnorm = nn.BatchNorm1d(4)
+#         self.act1 = F.tanh
+
+#     def forward(self, x):
+#         y = self.act1(self.batchnorm(self.conv1(x)))
+#         y = self.conv2(y)
+#         return y.double()
+
 class FullRealToComplexCNN(nn.Module):
-    def __init__(self, input_length=50, output_length=5, num_filters=25):
+    def __init__(self, input_length=18, output_length=1, hl1 = 10):
         super(FullRealToComplexCNN, self).__init__()
-        self.fc1 = nn.Linear(input_length, num_filters)
-        self.fc2 = nn.Linear(num_filters, output_length)
-        self.act = F.tanh
+        self.fc1 = nn.Linear(input_length, hl1)
+        self.fc2 = nn.Linear(hl1, output_length)
+
+        self.act1 = F.softplus
+        self.act2 = F.softplus
+
+        self.norm = F.normalize
 
     def forward(self, x):
-        out1 = self.act(self.fc1(x))
-        out2 = self.fc2(out1)
-        return out2.double()
+        x = self.act1(self.fc1(x))
+        x = self.fc2(x)
+        return x.double()
 
 
 
@@ -173,11 +192,16 @@ class FullRealToComplexCNN(nn.Module):
 if __name__ == "__main__":
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    with open("../Pred_Sinf/atoms_fingerprints.pkl","rb") as f:
-        atoms, fps = pickle.load(f)
+    # sig_lib.write_atoms_lmbtrs()
+    # atoms, fps = sig_lib.get_atoms_lmbtrs()
+    sig_lib.write_atoms_soaps()
+    atoms, fps = sig_lib.get_atoms_soaps()
+
+
     all_iws, all_sigs = sig_lib.get_sigs()
     all_tails = sig_lib.fit_sig_tails(all_iws, all_sigs)
 
+    all_tails, fps = sig_lib.shuffle_data(all_tails, fps)
 
     N_train = int(0.9*len(atoms))
 
@@ -200,17 +224,9 @@ if __name__ == "__main__":
     model = FullRealToComplexCNN().to(device)
 
 
-    # example_input = torch.randn(8, 50)  
-    # output = model(example_input)
-    # print("Output shape:", output.shape) 
-    # print("Output dtype:", output.dtype)  
-    # exit()
 
-
-
-
-    optimizer = torch.optim.Adam(model.parameters(), lr=0.1)
-    # scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
+    optimizer = torch.optim.Adam(model.parameters(), lr=0.001)
+    scheduler = torch.optim.lr_scheduler.StepLR(optimizer, step_size=10, gamma=0.1)
     epochs = 30
     loss_fn = nn.MSELoss()
     loss_fn_2 = nn.MSELoss()
@@ -223,26 +239,24 @@ if __name__ == "__main__":
         for inputs, targets in dataloader:
             optimizer.zero_grad()
             outputs = model(inputs)
-            # loss = complex_mse_loss(outputs, targets)
-  
             loss = loss_fn(outputs, targets)
             loss.backward()
             optimizer.step()
             tloss = tloss + loss.item()
-            for vali, valt in val_dataloader:
-                val_output = model(vali)
-                # vloss += complex_mse_loss(val_output, valt)
-                vloss = loss_fn_2(val_output, valt)
             count += 1
-        # scheduler.step()
-        # if epoch % 50 == 0:
+
+        scheduler.step()
+
+        for vali, valt in val_dataloader:
+                val_output = model(vali)
+                vloss += loss_fn_2(val_output, valt)
+
         print(f"Epoch {epoch}, Training Loss: {tloss/count:.6f}, Validation Loss: {vloss/len(val_dataset)}")
-        # losses.append(tloss/count)
 
     torch.save(model.state_dict(), "tailfit_fcnn.pth")
+    with open("val_dataset.pkl","wb") as f:
+        pickle.dump(val_dataset, f)
 
-    # plt.plot(losses, marker="o")
-    # plt.show()
 
 
 

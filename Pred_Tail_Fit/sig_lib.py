@@ -5,6 +5,8 @@ import os
 from scipy.optimize import curve_fit
 import pickle
 from io import StringIO
+from dscribe.descriptors import LMBTR, SOAP
+import time
 
 def high_freq_func(wn, c, a):
   return a + c/wn
@@ -107,6 +109,19 @@ def proj_sig_full_matsubara(iws, sigs):
   return e_iws, msig
 
 
+def shuffle_data(set1, set2):
+  inds = np.arange(0, len(set1))
+  np.random.shuffle(inds)
+  news1 = []
+  news2 = []
+  for i, ind in enumerate(inds):
+    news1.append(set1[ind])
+    news2.append(set2[ind])
+  news1 = np.array(news1)
+  news2 = np.array(news2)
+  return news1, news2
+
+
 
 def write_gxs():
   all_iws, all_sigs = get_sigs()
@@ -160,14 +175,75 @@ def fit_sig_tails(iws, sigs):
         popt, _ = curve_fit(high_freq_func, tiws, tsig.imag)
         ttails[j,k] = popt
     all_tails.append(ttails)
-  return np.array(all_tails)
+  all_tails = np.array(all_tails)
+
+  ### Subtract out average ###
+  all_tails[:,:,:,0] = all_tails[:,:,:,0]  - np.average(all_tails[:,:,:,0])
+
+  return all_tails
 
 
 def get_atoms_fps():
   with open("../Pred_Sinf/atoms_fingerprints.pkl", "rb") as f:
     atoms, fingerprints = pickle.load(f)
-  print(len(atoms), len(fingerprints))
-  exit()
+  fingerprints = np.array(fingerprints)
+  fingerprints = fingerprints[:,0,:,:]
+  for s in range(len(fingerprints)):
+    for a in range(fingerprints.shape[1]):
+      fingerprints[s, a, :] = fingerprints[s, a, :]/np.linalg.norm(fingerprints[s,a,:])
+  return atoms, fingerprints
+
+
+def write_atoms_lmbtrs():
+  with open("../Pred_Sinf/atoms_fingerprints.pkl", "rb") as f:
+    atoms, fingerprints = pickle.load(f)
+  lmbtr = LMBTR(
+    species = ["Fe"],
+    geometry={"function":"distance"},
+    grid = {"min": 2, "max": 5.0, "n": 50, "sigma": 0.1},
+    weighting={"function": "exp", "scale": 0.5, "threshold": 1e-3},
+    periodic=True, 
+    normalization="l2"
+  )
+  st = time.time()
+  print("Computing descriptors...")
+  lmbtrs = lmbtr.create(atoms)
+  print("Took", time.time() - st, "seconds to compute LMBTR vectors")
+  with open("atoms_lmbtrs.pkl","wb") as f:
+    pickle.dump([atoms, lmbtrs], f)
+
+def get_atoms_lmbtrs():
+  with open("atoms_lmbtrs.pkl","rb") as f:
+    atoms, lmbtrs = pickle.load(f)
+  return atoms, lmbtrs
+
+
+def write_atoms_soaps():
+  with open("../Pred_Sinf/atoms_fingerprints.pkl", "rb") as f:
+    atoms, fingerprints = pickle.load(f)
+  lmbtr = SOAP(
+    species = ["Fe"],
+    periodic=True, 
+    sigma = 0.5,
+    r_cut = 5.0,
+    n_max = 3,
+    l_max = 2,
+    weighting = {"function": "exp","c":1, "d":1, "r0":5.0/2}
+  )
+  st = time.time()
+  print("Computing descriptors...")
+  lmbtrs = lmbtr.create(atoms)
+  print("Took", time.time() - st, "seconds to compute SOAP vectors")
+  with open("atoms_soaps.pkl","wb") as f:
+    pickle.dump([atoms, lmbtrs], f)
+
+def get_atoms_soaps():
+  with open("atoms_soaps.pkl","rb") as f:
+    atoms, lmbtrs = pickle.load(f)
+  return atoms, lmbtrs
+
+
+
 
 
 
