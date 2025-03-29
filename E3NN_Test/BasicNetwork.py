@@ -331,6 +331,9 @@ class PeriodicNetwork(Network):
         # embed the mass-weighted one-hot encoding
         self.em = nn.Linear(in_dim, em_dim)
 
+        ## Learnable scaling factor
+        self.gamma = torch.nn.Parameter(torch.tensor(1.0))
+
     def forward(self, data: Union[tg.data.Data, Dict[str, torch.Tensor]]) -> torch.Tensor:
         data.x = F.relu(self.em(data.x))
         data.z = F.relu(self.em(data.z))
@@ -351,34 +354,16 @@ class PeriodicNetwork(Network):
         # if self.pool == True:
             # output = torch_scatter.scatter_mean(output, data.batch, dim=0)  # take mean over atoms per example
         
-        maxima, _ = torch.max(output, dim=1)
-        output = output.div(maxima.unsqueeze(1))
+        # maxima, _ = torch.max(output, dim=1)
+        # output = output.div(maxima.unsqueeze(1))
+
+        ### New normalization since the old one is tuned for phDOS ###
+        eps = 1e-8  
+        output = output/self.gamma
+        # norm = torch.norm(output, p=2, dim=1, keepdim=True)
+        # output = self.gamma * output / (norm + eps)
         
         return output
-
-def compute_second_derivs(vec):
-    ap_vec = np.hstack(([vec[0]], vec, [vec[-1]]))
-    out_vec = np.zeros(len(vec))
-    for i in range(len(vec)):
-        out_vec[i] = ap_vec[i] + ap_vec[i+2] - 2*ap_vec[i+1]
-    return out_vec
-
-
-def f(x, a, b, c, d, e, f):
-    return a*x**5 + b*x**4 + c*x**3 + d*x**2 + e*x + f
-
-def fix_output(output):
-    for a in range(len(output)):
-        output_deriv = compute_second_derivs(output[a])
-        z_scores = np.abs((output_deriv - np.mean(output_deriv))/np.std(output_deriv))
-        bad_inds = np.where(z_scores > 3)[0]
-        if len(bad_inds) > 0:
-            newx = np.delete(np.arange(0, len(output[a])), bad_inds)
-            newy = np.delete(output[a], bad_inds)
-            popt, _ = curve_fit(f, newx, newy)
-            output[a, bad_inds] = f(bad_inds, *popt)
-    return output
-
 
 
 
@@ -396,12 +381,27 @@ def evaluate(model, dataset):
 
     for i in range(N1):
         for j in range(N2):
-            output = fix_output(model(dataset[N2*i+j]).detach().numpy())
+            # output = fix_output(model(dataset[N2*i+j]).detach().numpy())
+            output = model(dataset[N2*i+j]).detach().numpy()
             # for k in range(len(dataset[N2*i + j].sig[0])):
             #     axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,k].numpy(), c=colors_gt[k])
             #     axs[i,j].plot(iws[0], output[k].detach().numpy(), c=colors_pred[k])
-            axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,0].numpy(), c="black")
-            axs[i,j].plot(iws[0], output[0], c="red")
+            if i == 0 and j ==0:
+                axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,0].numpy(), c="black", label="True DMFT Im{$\Sigma$(i$\omega_n$)}")
+                axs[i,j].plot(iws[0], output[0], c="red", marker='o', markersize=2, label="Predicted DMFT Im{$\Sigma$(i$\omega_n$)}")
+            else:
+                axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,0].numpy(), c="black")
+                axs[i,j].plot(iws[0], output[0], c="red", marker='o', markersize=2)
+    
+    fig.add_subplot(111, frameon=False)
+    # hide tick and tick label of the big axis
+    plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+    plt.xlabel("i$\omega_n$", labelpad=5, fontsize=25)
+    plt.ylabel("Im{$\Sigma$(i$\omega_n$)}", labelpad=20, fontsize=25)
+
+    handles, labels = axs[0,0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper right")
+    # plt.tight_layout()
     plt.show()
 
 

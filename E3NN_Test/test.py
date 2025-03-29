@@ -113,7 +113,7 @@ test_data = all_data[100:]
 
 save_path = "beastly_model.pth"
 
-# train(model, opt, train_data, loss_fn, save_path= save_path, max_iter=3)
+# train(model, opt, train_data, loss_fn, save_path= save_path, max_iter=20)
 model.load_state_dict(torch.load(save_path))
 evaluate(model, test_data)
 
