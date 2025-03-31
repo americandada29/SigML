@@ -281,20 +281,18 @@ def loglinspace(rate, step, end=None):
         t = int(t + 1 + step*(1 - math.exp(-t*rate/step)))
 
         
-def evaluate(model, dataloader, loss_fn, loss_fn_mae, device):
-    model.eval()
-    loss_cumulative = 0.
-    loss_cumulative_mae = 0.
-    start_time = time.time()
-    with torch.no_grad():
-        for j, d in enumerate(dataloader):
-            d.to(device)
-            output = model(d)
-            loss = loss_fn(output, d.phdos).cpu()
-            loss_mae = loss_fn_mae(output, d.phdos).cpu()
-            loss_cumulative = loss_cumulative + loss.detach().item()
-            loss_cumulative_mae = loss_cumulative_mae + loss_mae.detach().item()
-    return loss_cumulative/len(dataloader), loss_cumulative_mae/len(dataloader)
+def train_test_split(dataset, test_percent=0.9):
+    N = int(test_percent*len(dataset))
+    inds = np.arange(0, len(dataset), 1)
+    np.random.shuffle(inds)
+    train_data = []
+    test_data = []
+    for i in range(len(inds)):
+        if i < N:
+            train_data.append(dataset[inds[i]])
+        else:
+            test_data.append(dataset[inds[i]])
+    return train_data, test_data
 
 
 def train(model, optimizer, dataset, loss_fn, save_path = None, max_iter=101, device="cpu"):
@@ -388,10 +386,10 @@ def evaluate(model, dataset):
             #     axs[i,j].plot(iws[0], output[k].detach().numpy(), c=colors_pred[k])
             if i == 0 and j ==0:
                 axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,0].numpy(), c="black", label="True DMFT Im{$\Sigma$(i$\omega_n$)}")
-                axs[i,j].plot(iws[0], output[0], c="red", marker='o', markersize=2, label="Predicted DMFT Im{$\Sigma$(i$\omega_n$)}")
+                axs[i,j].plot(iws[0], output[0], c="red", marker='o', markersize=2, linestyle="--", label="Predicted DMFT Im{$\Sigma$(i$\omega_n$)}")
             else:
                 axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,0].numpy(), c="black")
-                axs[i,j].plot(iws[0], output[0], c="red", marker='o', markersize=2)
+                axs[i,j].plot(iws[0], output[0], c="red", marker='o', markersize=2, linestyle="--")
     
     fig.add_subplot(111, frameon=False)
     # hide tick and tick label of the big axis

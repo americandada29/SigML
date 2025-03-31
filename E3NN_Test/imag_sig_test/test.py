@@ -21,7 +21,7 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import pickle 
 
 from dlr_testing import parse_sig_file
-from BasicNetwork import PeriodicNetwork, train, evaluate
+from BasicNetwork import PeriodicNetwork, train, evaluate, train_test_split
 
 
 
@@ -108,8 +108,9 @@ model = PeriodicNetwork(in_dim = 118,
 opt = torch.optim.AdamW(model.parameters(), lr=0.005, weight_decay=0.05)
 loss_fn = torch.nn.MSELoss()
 
-train_data = all_data[:100]
-test_data = all_data[100:]
+# train_data = all_data[:100]
+# test_data = all_data[100:]
+train_data, test_data = train_test_split(all_data)
 
 save_path = "beastly_model.pth"
 

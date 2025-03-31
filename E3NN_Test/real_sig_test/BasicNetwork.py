@@ -346,7 +346,7 @@ def train_test_split(dataset, test_percent=0.9):
     return train_data, test_data
 
 
-def train(model, optimizer, dataset, loss_fn, save_path = None, max_iter=101, val_percent = 0.9, device="cpu", batch_size=1):
+def train(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.9, device="cpu", batch_size=1):
     model.to(device)
 
     train_data, val_data = train_test_split(dataset, test_percent=val_percent)
@@ -380,6 +380,7 @@ def train(model, optimizer, dataset, loss_fn, save_path = None, max_iter=101, va
             loss_val += loss.cpu().detach().item()
 
         print("Epoch", str(step),"Train Loss =", loss_cumulative/len(dataloader), "Val Loss =", loss_val/len(val_dataloader))
+        scheduler.step()
     if save_path is not None:
         print("Saving model to", save_path)
         torch.save(model.state_dict(), save_path)
@@ -414,7 +415,7 @@ def evaluate(model, dataset):
     # hide tick and tick label of the big axis
     plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
     plt.xlabel("i$\omega_n$", labelpad=5, fontsize=25)
-    plt.ylabel("Im{$\Sigma$(i$\omega_n$)}", labelpad=20, fontsize=25)
+    plt.ylabel("Re{$\Sigma$(i$\omega_n$)}", labelpad=20, fontsize=25)
 
     handles, labels = axs[0,0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper right")

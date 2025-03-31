@@ -107,14 +107,15 @@ model = PeriodicNetwork(in_dim = 118,
 
 
 opt = torch.optim.AdamW(model.parameters(), lr=0.01, weight_decay=0.05)
-loss_fn = torch.nn.MSELoss()
-# loss_fn = WeightedMSELoss(weight_ratio=50.0, cutoff_fraction=0.05)
+scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=5, gamma=0.1)
+# loss_fn = torch.nn.MSELoss()
+loss_fn = WeightedMSELoss(weight_ratio=100.0, cutoff_fraction=0.05)
 
 train_data, test_data = train_test_split(all_data)
 
 save_path = "beastly_model.pth"
 
-train(model, opt, train_data, loss_fn, save_path= save_path, max_iter=5)
+train(model, opt, train_data, loss_fn, scheduler, save_path= save_path, max_iter=20)
 model.load_state_dict(torch.load(save_path))
 evaluate(model, test_data)
 
