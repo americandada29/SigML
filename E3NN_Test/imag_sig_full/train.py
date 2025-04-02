@@ -126,18 +126,22 @@ model = PeriodicNetwork(in_dim = 118,
 
 
 
+### Testing various optimizers ###
 opt = torch.optim.AdamW(model.parameters(), lr=0.01, weight_decay=0.05)
 # opt = torch.optim.SGD(model.parameters(), lr=0.000001)
+
+### Testing various schedulers ###
 scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=5, gamma=0.25)
 # scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, patience=3, threshold=1e-6)
 
+
+### Testing various loss functions ###
 # loss_fn = torch.nn.MSELoss(reduction="sum")
 # loss_fn = PeakEmphasisSmoothLoss(out_dim, 5, int(0.2*out_dim))
 loss_fn = torch.nn.SmoothL1Loss(reduction="sum")
 
-# train_data = all_data[:100]
-# test_data = all_data[100:]
-train_data, test_data = train_test_split(all_data)
+
+train_data, test_data = train_test_split(all_data, seed=34533)
 
 save_path = "beastly_model.pth"
 

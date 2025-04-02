@@ -281,10 +281,15 @@ def loglinspace(rate, step, end=None):
         t = int(t + 1 + step*(1 - math.exp(-t*rate/step)))
 
         
-def train_test_split(dataset, test_percent=0.9):
+def train_test_split(dataset, test_percent=0.9, seed=None):
+    rng = None
+    if seed is not None:
+        rng = np.random.default_rng(seed=seed)
+    else:
+        rng = np.random.default_rng()
     N = int(test_percent*len(dataset))
     inds = np.arange(0, len(dataset), 1)
-    np.random.shuffle(inds)
+    rng.shuffle(inds)
     train_data = []
     test_data = []
     for i in range(len(inds)):
@@ -338,6 +343,7 @@ def train(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_i
     if save_path is not None:
         print("Saving model to", save_path)
         torch.save(model.state_dict(), save_path)
+
 
 class AtomWiseLayerNorm(nn.Module):
     def __init__(self, N_atoms, N_features, N_matsubara, eps=1e-5):
@@ -400,6 +406,7 @@ class PeakEmphasisSmoothLoss(nn.Module):
 
         # Summed loss
         return weighted_diff.sum()
+
 
 class PeriodicNetwork(Network):
     def __init__(self, in_dim, em_dim, **kwargs):            
@@ -469,7 +476,6 @@ class PeriodicNetwork(Network):
         return output
 
 
-
 def evaluate(model, dataset_org, orbital):
     dataset = copy.deepcopy(dataset_org)
     model.eval()
@@ -503,7 +509,6 @@ def evaluate(model, dataset_org, orbital):
     fig.legend(handles, labels, loc="upper right")
     # plt.tight_layout()
     plt.show()
-
 
 
 def l2_to_matrix(l2_vec):
