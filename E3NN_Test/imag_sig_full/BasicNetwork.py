@@ -11,7 +11,7 @@ import torch_scatter
 from e3nn import o3
 from e3nn.math import soft_one_hot_linspace
 from e3nn.nn import Gate
-from e3nn.nn.models.gate_points_2101 import Convolution, smooth_cutoff, tp_path_exists
+from gate_points_2101 import Convolution, smooth_cutoff, tp_path_exists
 import numpy as np
 
 import matplotlib.pyplot as plt
@@ -30,7 +30,7 @@ bar_format = '{l_bar}{bar:10}{r_bar}{bar:-10b}'
 fontsize = 16
 textsize = 14
 sub = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
-plt.rcParams['font.family'] = 'lato'
+# plt.rcParams['font.family'] = 'lato'
 plt.rcParams['axes.linewidth'] = 1
 plt.rcParams['mathtext.default'] = 'regular'
 plt.rcParams['xtick.bottom'] = True
@@ -309,12 +309,13 @@ def train(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_i
         for d in tqdm(dataloader):
             d.to(device)
             output = model(d)
-            if batch_size == 1:
-                output = output.unsqueeze(0)
-            loss = loss_fn(output, d.sig)
+            # if batch_size == 1:
+            #     output = output.unsqueeze(0)
+            loss = loss_fn(output, d.sig[0])
             loss_cumulative += loss.cpu().detach().item()
             optimizer.zero_grad()
             loss.backward()
+            # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
             optimizer.step()
 
         ## Valdiation 
@@ -325,19 +326,80 @@ def train(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_i
             val_out = model(v)
             if batch_size == 1:
                 val_out = val_out.unsqueeze(0)
-            if vi == 0:
-                print(val_out)
-                print(v.sig)
+            # if vi == 0:
+            #     print(val_out)
+            #     print(v.sig)
             loss = loss_fn(val_out, v.sig)
             loss_val += loss.cpu().detach().item()
 
         print("Epoch", str(step),"Train Loss =", loss_cumulative/len(dataloader), "Val Loss =", loss_val/len(val_dataloader))
+        # scheduler.step(loss_val)
         scheduler.step()
     if save_path is not None:
         print("Saving model to", save_path)
         torch.save(model.state_dict(), save_path)
 
+class AtomWiseLayerNorm(nn.Module):
+    def __init__(self, N_atoms, N_features, N_matsubara, eps=1e-5):
+        super().__init__()
         
+        # Each atom and feature pair has its own gamma and beta
+        self.gamma = nn.Parameter(torch.ones(N_atoms, N_matsubara, N_features))
+        self.beta = nn.Parameter(torch.zeros(N_atoms, N_matsubara, N_features))
+        
+        self.eps = eps
+        self.N_matsubara = N_matsubara
+
+    def forward(self, x):
+        # x: (N_atoms, N_matsubara, N_features)
+        
+        mean = x.mean(dim=1, keepdim=True)  # mean over matsubara dimension
+        std = x.std(dim=1, keepdim=True, unbiased=False)  # std dev over matsubara dimension
+        
+        # Normalize
+        x_norm = (x - mean) / (std + self.eps)
+        
+        # Apply per-atom, per-feature learnable parameters
+        out = self.gamma * x_norm + self.beta
+        
+        return out
+
+
+class PeakEmphasisSmoothLoss(nn.Module):
+    def __init__(self, N_matsubara, peak_emphasis_factor=10.0, emphasis_width=30):
+        """
+        Args:
+            N_matsubara (int): Total length of the Matsubara frequency dimension.
+            peak_emphasis_factor (float): How heavily to emphasize the beginning points.
+            emphasis_width (int): How many points at the start to emphasize strongly.
+        """
+        super().__init__()
+        
+        # Create a weight vector emphasizing the start region
+        weights = torch.ones(N_matsubara)
+        
+        # Create a smooth Gaussian emphasis on initial points
+        emphasis = torch.exp(-torch.linspace(0, 3, emphasis_width)**2)
+        emphasis = 1.0 + (peak_emphasis_factor - 1.0) * emphasis
+
+        weights[:emphasis_width] = emphasis
+
+        # Normalize weights to avoid overly large losses
+        weights = weights / weights.mean()
+
+        self.register_buffer('weights', weights)
+
+    def forward(self, pred, target):
+        """
+        pred, target: tensors of shape (N_atoms, N_matsubara, 5)
+        """
+        diff = F.smooth_l1_loss(pred, target, reduction='none')  # shape: (N_atoms, N_matsubara, 5)
+        
+        # Apply weights along the Matsubara dimension
+        weighted_diff = diff * self.weights.view(1, -1, 1)
+
+        # Summed loss
+        return weighted_diff.sum()
 
 class PeriodicNetwork(Network):
     def __init__(self, in_dim, em_dim, **kwargs):            
@@ -355,10 +417,21 @@ class PeriodicNetwork(Network):
         ## Learnable scaling factor
         self.gamma = torch.nn.Parameter(torch.tensor(1.0))
 
+        ## Trainable normalization layer
+        self.n_matsubara = self.irreps_out[0][0]
+        self.atom_wise_norm = AtomWiseLayerNorm(N_atoms=4, N_features=5, N_matsubara=self.n_matsubara)
+        
+
+
     def forward(self, data: Union[tg.data.Data, Dict[str, torch.Tensor]]) -> torch.Tensor:
-        data.x = F.relu(self.em(data.x))
-        data.z = F.relu(self.em(data.z))
+        # data.x = F.relu(self.em(data.x))
+        # data.z = F.relu(self.em(data.z))
+        data.x = F.sigmoid(self.em(data.x))
+        data.z = F.sigmoid(self.em(data.z))
+
+
         output = super().forward(data)
+        output = output.view(output.shape[0], int(output.shape[1]/5), 5)
 
         ## Original Activiation ##
         # output = torch.relu(output)
@@ -367,28 +440,38 @@ class PeriodicNetwork(Network):
         # output = F.sigmoid(output)
 
         ## Modified Activation (Tanh is even more KINGLIER) ##
-        output = F.tanh(output)
+        # output = F.tanh(output)
 
-        
-        
-        # if pool_nodes was set to True, use scatter_mean to aggregate
-        # if self.pool == True:
-            # output = torch_scatter.scatter_mean(output, data.batch, dim=0)  # take mean over atoms per example
-        
-        # maxima, _ = torch.max(output, dim=1)
-        # output = output.div(maxima.unsqueeze(1))
+
+        ### THIS IS EXTREMELY IMPORTANT FOR SOME REASON (the abs part at least)
+        output = torch.abs(F.silu(output))
+        # output = torch.abs(F.elu(output))
+        # output = torch.abs(F.mish(output))
+
+
+        ### This layer basically adds a variation on top of the predicted output
+        # output = self.atom_wise_norm(output)
+
 
         ### New normalization since the old one is tuned for phDOS ###
-        eps = 1e-8  
-        # output = output/self.gamma
-        # norm = torch.norm(output, p=2, dim=1, keepdim=True)
-        # output = self.gamma * output / (norm + eps)
+        ### THIS IS EXTREMELY IMPORTANT FOR SOME REASON
+        eps = 1e-8
+        norm = torch.norm(output, p=2, dim=1, keepdim=True)
+        output = self.gamma * output / (norm + eps)
+
+
+        ## If norm, abs and a multiplicity greater than 32 are not included, the model does not work at all. If they are, it works perfectly. It doesn't make sense
+        ## but I don't make the rules...
+
+        
+        output = -1*output
         
         return output
 
 
 
-def evaluate(model, dataset):
+def evaluate(model, dataset_org, orbital):
+    dataset = copy.deepcopy(dataset_org)
     model.eval()
     iws = dataset[0].iws
 
@@ -401,18 +484,14 @@ def evaluate(model, dataset):
 
     for i in range(N1):
         for j in range(N2):
-            # output = fix_output(model(dataset[N2*i+j]).detach().numpy())
             output = model(dataset[N2*i+j]).detach().numpy()
-            N_sig_len = int(output.shape[1]/5)
-            # for k in range(len(dataset[N2*i + j].sig[0])):
-            #     axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,k].numpy(), c=colors_gt[k])
-            #     axs[i,j].plot(iws[0], output[k].detach().numpy(), c=colors_pred[k])
+            N_sig_len = int(output.shape[1])
             if i == 0 and j ==0:
-                axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,0, :N_sig_len].numpy(), c="black", label="True DMFT Im{$\Sigma$(i$\omega_n$)}")
-                axs[i,j].plot(iws[0], output[0, :N_sig_len], c="red", marker='o', markersize=2, label="Predicted DMFT Im{$\Sigma$(i$\omega_n$)}")
+                axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,0, :, orbital].numpy(), c="black", label="True DMFT Im{$\Sigma$(i$\omega_n$)}")
+                axs[i,j].plot(iws[0], output[0, :, orbital], c="red", marker='o', markersize=2, label="Predicted DMFT Im{$\Sigma$(i$\omega_n$)}")
             else:
-                axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,0, :N_sig_len].numpy(), c="black")
-                axs[i,j].plot(iws[0], output[0, :N_sig_len], c="red", marker='o', markersize=2)
+                axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,0, :, orbital].numpy(), c="black")
+                axs[i,j].plot(iws[0], output[0, :, orbital], c="red", marker='o', markersize=2)
     
     fig.add_subplot(111, frameon=False)
     # hide tick and tick label of the big axis
@@ -424,5 +503,56 @@ def evaluate(model, dataset):
     fig.legend(handles, labels, loc="upper right")
     # plt.tight_layout()
     plt.show()
+
+
+
+def l2_to_matrix(l2_vec):
+    # l2_vec: tensor of shape (..., 5) or [N, N_matsubara, 5]
+    # Here, we simply create a diagonal matrix per 5-vector.
+    return torch.diag_embed(l2_vec)
+
+
+# class CrystalSelfEnergyNetwork(torch.nn.Module):
+#     r"""Equivariant graph network for predicting the d‑orbital self energy per atom.
+    
+#     This network takes as input atomic positions (and lattice vectors via periodic
+#     graph construction) along with optional node attributes (e.g. atomic numbers in "z")
+#     and predicts for each node (atom) an output consisting of N_matsubara copies of the l=2
+#     (2e) irreps (each of dimension 5). A helper function (l2_to_matrix) then maps each
+#     5-dimensional prediction into a 5×5 matrix. Finally, if target_atom_types is provided,
+#     only the predictions for those atoms are returned.
+    
+#     Parameters
+#     ----------
+#     N_matsubara : int
+#         Number of Matsubara frequencies. For each frequency the network predicts a 2e
+#         (5-dimensional) feature vector.
+#     em_dim : int
+#         Dimensionality for any additional node attributes.
+#     target_atom_types : list or None
+#         A list of atomic numbers (or other identifiers) for which the network should
+#         predict self energies (e.g. [26] for Fe). If None, predictions for all nodes are returned.
+#     irreps_in : str, optional
+#         Input irreps for node features (default: "0e"). If no explicit features are provided,
+#         a default ones vector is used.
+#     layers : int, optional
+#         Number of equivariant convolution layers (default: 2).
+#     mul : int, optional
+#         Multiplicity for hidden irreps.
+#     lmax : int, optional
+#         Maximum angular momentum for spherical harmonics (default: 2).
+#     max_radius : float, optional
+#         Maximum radius for neighborhood construction (default: 5.0).
+#     number_of_basis : int, optional
+#         Number of basis functions for edge length embedding (default: 10).
+#     radial_layers : int, optional
+#         Number of layers in the radial network (default: 1).
+#     radial_neurons : int, optional
+#         Number of neurons per radial network layer (default: 100).
+#     num_neighbors : float, optional
+#         Typical number of neighbors (default: 1.0).
+#     num_nodes : float, optional
+#         Typical number of nodes per graph (used for normalization; default: 1).
+#     """
 
 

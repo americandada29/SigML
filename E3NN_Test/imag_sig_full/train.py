@@ -21,14 +21,23 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import pickle 
 
 from dlr_testing import parse_sig_file
-from BasicNetwork import PeriodicNetwork, train, evaluate
+from BasicNetwork import PeriodicNetwork, train, evaluate, visualize_layers, train_test_split, PeakEmphasisSmoothLoss
 
 
-def build_sig_matrix(sig_inp):
+### Builds self energy matrix in vector form (atoms, N_matsubara*5)
+def build_sig_vector(sig_inp):
     sig = np.zeros((sig_inp.shape[0], sig_inp.shape[1]*sig_inp.shape[2])).astype(np.complex128)
     for i in range(len(sig_inp)):
         for j in range(len(sig_inp[i])):
             sig[i, j*sig_inp.shape[2]:(j+1)*sig_inp.shape[2]] = sig_inp[i,j]
+    return sig
+
+### Builds self energy matrix in fortran form (atoms, N_matsubara, 5)
+def build_sig_matrix_fortran(sig_inp):
+    sig = np.zeros((sig_inp.shape[0], sig_inp.shape[2], sig_inp.shape[1])).astype(np.complex128)
+    for i in range(len(sig_inp)):
+        for j in range(len(sig_inp[i])):
+            sig[i, :, j] = sig_inp[i,j]
     return sig
 
 
@@ -41,8 +50,10 @@ def build_data(atom, sig_text, type_encoding, type_onehot, am_onehot, r_max=5.0)
 
     #### IMPORTANT: Only taking the imaginary part of the self energy for training for now, also only first orbital (d_xy or something) self energy #####
     # sig = torch.from_numpy(-1*sig.imag[:,0,:]).unsqueeze(0).type(torch.float32)
-    sig = build_sig_matrix(sig)
-    sig = torch.from_numpy(-1*sig.imag).unsqueeze(0).type(torch.float32)
+    # sig = build_sig_matrix_cpp(sig)
+    sig = build_sig_matrix_fortran(sig)
+    sig = torch.from_numpy(sig.imag).unsqueeze(0).type(torch.float32)
+    
 
 
 
@@ -98,8 +109,7 @@ neighbor_count = get_average_neighbor_count(all_data)
 
 
 ## Dividing out dim by 5 to account for 5D representation of l=2 spherical harmonics 
-out_dim = int(all_data[0].sig.shape[2]/5)
-
+out_dim = int(all_data[0].sig.shape[2])
 em_dim = 32
 model = PeriodicNetwork(in_dim = 118,
                         em_dim= em_dim,
@@ -107,26 +117,35 @@ model = PeriodicNetwork(in_dim = 118,
                         irreps_out = str(5*out_dim) + "x0e",
                         irreps_node_attr = str(em_dim) + "x0e",
                         layers=2,
-                        mul=32,
+                        mul=64,
                         lmax=2,
                         max_radius=radial_cutoff,
                         num_neighbors=neighbor_count.mean(),
                         reduce_output=False)
 
 
+
+
 opt = torch.optim.AdamW(model.parameters(), lr=0.01, weight_decay=0.05)
 # opt = torch.optim.SGD(model.parameters(), lr=0.000001)
-scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=5, gamma=0.1)
-loss_fn = torch.nn.MSELoss()
+scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=5, gamma=0.25)
+# scheduler = torch.optim.lr_scheduler.ReduceLROnPlateau(opt, patience=3, threshold=1e-6)
 
-train_data = all_data[:100]
-test_data = all_data[100:]
+# loss_fn = torch.nn.MSELoss(reduction="sum")
+# loss_fn = PeakEmphasisSmoothLoss(out_dim, 5, int(0.2*out_dim))
+loss_fn = torch.nn.SmoothL1Loss(reduction="sum")
+
+# train_data = all_data[:100]
+# test_data = all_data[100:]
+train_data, test_data = train_test_split(all_data)
 
 save_path = "beastly_model.pth"
 
-train(model, opt, train_data, loss_fn, scheduler, save_path= save_path, max_iter=5)
+train(model, opt, train_data, loss_fn, scheduler, save_path= save_path, max_iter=20)
 model.load_state_dict(torch.load(save_path))
-evaluate(model, test_data)
+
+for o in range(5):
+    evaluate(model, test_data, orbital=o)
 
 
 
