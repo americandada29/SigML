@@ -314,7 +314,6 @@ def train(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_i
         for d in tqdm(dataloader):
             d.to(device)
             output = model(d)
-            exit()
             # if batch_size == 1:
             #     output = output.unsqueeze(0)
             loss = loss_fn(output, d.sig[0])
@@ -431,15 +430,18 @@ class PeriodicNetwork(Network):
         
 
 
-    def forward(self, data: Union[tg.data.Data, Dict[str, torch.Tensor]]) -> torch.Tensor:
+    def forward(self, data_inp: Union[tg.data.Data, Dict[str, torch.Tensor]]) -> torch.Tensor:
         # data.x = F.relu(self.em(data.x))
         # data.z = F.relu(self.em(data.z))
+
+
+        data = copy.deepcopy(data_inp)
         data.x = F.sigmoid(self.em(data.x))
         data.z = F.sigmoid(self.em(data.z))
 
 
         output = super().forward(data)
-        output = output.view(output.shape[0], int(output.shape[1]/5), 5)
+        #output = output.view(output.shape[0], int(output.shape[1]/5), 5)
 
         ## Original Activiation ##
         # output = torch.relu(output)
@@ -545,12 +547,11 @@ class CrystalSelfEnergyNetwork(torch.nn.Module):
         outputs = []
         for model in self.models:
             out = model(data)  # shape: (N_atoms, N_matsubara)
-            print(out)
             outputs.append(out.unsqueeze(-1))  # shape: (N_atoms, N_matsubara, 1)
 
         # Stack along the last dimension -> (N_atoms, N_matsubara, N_orbitals)
         output = torch.cat(outputs, dim=-1)
-
+  
         return output
     
 
