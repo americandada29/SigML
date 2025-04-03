@@ -1,0 +1,447 @@
+import torch
+import torch.nn as nn
+import torch.nn.functional as F
+import torch_geometric as tg
+import torch_scatter
+import e3nn
+from e3nn import o3
+from typing import Dict, Union
+
+# crystal structure data
+from ase import Atom, Atoms
+from ase.neighborlist import neighbor_list
+from ase.visualize.plot import plot_atoms
+
+# data pre-processing and visualization
+import numpy as np
+import matplotlib as mpl
+import matplotlib.pyplot as plt
+from mpl_toolkits.axes_grid1.inset_locator import inset_axes
+import pickle 
+import copy
+import io
+
+# from dlr_testing import parse_sig_file
+# from BasicNetwork import PeriodicNetwork, train, evaluate, visualize_layers, train_test_split, PeakEmphasisSmoothLoss, CrystalSelfEnergyNetwork
+from Full_Sig_Model import CrystalSelfEnergyNetwork
+from EF_Model import EF_Model
+from Sinf_Model import Sinf_Model
+
+# # format progress bar
+# bar_format = '{l_bar}{bar:10}{r_bar}{bar:-10b}'
+
+# # standard formatting for plots
+# fontsize = 16
+# textsize = 14
+# sub = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+# # plt.rcParams['font.family'] = 'lato'
+# plt.rcParams['axes.linewidth'] = 1
+# plt.rcParams['mathtext.default'] = 'regular'
+# plt.rcParams['xtick.bottom'] = True
+# plt.rcParams['ytick.left'] = True
+# plt.rcParams['font.size'] = fontsize
+# plt.rcParams['axes.labelsize'] = fontsize
+# plt.rcParams['xtick.labelsize'] = fontsize
+# plt.rcParams['ytick.labelsize'] = fontsize
+# plt.rcParams['legend.fontsize'] = textsize
+
+def parse_sig_file(sig_text, orbital="d"):
+  if orbital == "d":
+    num_orbitals = 5
+  elif orbital == "f":
+    num_orbitals = 7
+  else:
+    raise Exception("Orbital specified not supported, use either d or f")
+
+  sig_lines = sig_text.split("\n")
+  s_infs = np.array([float(x) for x in sig_lines[0].split("[")[1].split("]")[0].split(",")], dtype=np.float64)
+  data = np.loadtxt(sig_lines[2:])
+  iws = data[:,0]
+  sig_data = data[:, 1:]
+  num_atoms = int(sig_data.shape[1]/10)
+  adjusted_sig_data = np.zeros((num_atoms, num_orbitals, sig_data.shape[0]), dtype=np.complex128)
+  adjusted_sinfs = np.zeros((num_atoms, num_orbitals))
+  for i in range(num_atoms):
+    adjusted_sinfs[i] = s_infs[i*num_orbitals:(i+1)*num_orbitals]
+    for j in range(num_orbitals):
+      adjusted_sig_data[i,j] = sig_data[:,2*num_orbitals*i + 2*j] + 1j*sig_data[:,2*num_orbitals*i+2*j+1]
+  return iws, adjusted_sig_data, adjusted_sinfs
+
+
+### Builds self energy matrix in vector form (atoms, N_matsubara*5)
+def build_sig_vector(sig_inp):
+    sig = np.zeros((sig_inp.shape[0], sig_inp.shape[1]*sig_inp.shape[2])).astype(np.complex128)
+    for i in range(len(sig_inp)):
+        for j in range(len(sig_inp[i])):
+            sig[i, j*sig_inp.shape[2]:(j+1)*sig_inp.shape[2]] = sig_inp[i,j]
+    return sig
+
+
+### Builds self energy matrix in fortran form (atoms, N_matsubara, 5)
+def build_sig_matrix_fortran(sig_inp):
+    sig = np.zeros((sig_inp.shape[0], sig_inp.shape[2], sig_inp.shape[1])).astype(np.complex128)
+    for i in range(len(sig_inp)):
+        for j in range(len(sig_inp[i])):
+            sig[i, :, j] = sig_inp[i,j]
+    return sig
+
+
+def build_datapoint(atom, type_encoding, type_onehot, am_onehot, sig_text=None, ef=None, r_max=3.0):
+    symbols = list(atom.get_chemical_symbols())
+    positions = torch.from_numpy(atom.positions).type(torch.float32)
+    lattice = torch.from_numpy(atom.get_cell()[:]).unsqueeze(0).type(torch.float32)
+    
+    sig = None
+    iws = None
+    sinf = None
+    if sig_text is not None:
+        iws, sig, sinf = parse_sig_file(sig_text)
+        iws = torch.from_numpy(iws).unsqueeze(0).type(torch.float32)
+        sig = build_sig_matrix_fortran(sig)
+        sig = torch.from_numpy(sig).unsqueeze(0).type(torch.complex64)
+        sig = torch.stack((sig.real, sig.imag), dim=-1).type(torch.float32)
+        sinf = torch.from_numpy(sinf).type(torch.float32)
+    
+    ef_torch = None 
+    if ef is not None:
+        ef_torch = torch.tensor(ef).unsqueeze(0).type(torch.float32)
+
+
+
+    edge_src, edge_dst, edge_shift = neighbor_list("ijS", a=atom, cutoff=r_max, self_interaction=True)
+    edge_batch = positions.new_zeros(positions.shape[0], dtype=torch.long)[torch.from_numpy(edge_src)]
+
+    edge_vec = (positions[torch.from_numpy(edge_dst)]
+                - positions[torch.from_numpy(edge_src)]
+                + torch.einsum('ni,nij->nj', torch.tensor(edge_shift, dtype=torch.float32), lattice[edge_batch])).type(torch.float32)
+    
+    edge_len = edge_vec.norm(dim=1) 
+    x = am_onehot[[type_encoding[s] for s in symbols]].type(torch.float32)
+    z = type_onehot[[type_encoding[s] for s in symbols]]
+    edge_index=torch.stack([torch.LongTensor(edge_src), torch.LongTensor(edge_dst)], dim=0)
+    edge_shift = torch.tensor(edge_shift, dtype=torch.int16)
+    
+    data = tg.data.Data(pos = positions, lattice = lattice, symbol = symbols, 
+                        x = x, z = z, edge_index=edge_index, edge_shift = edge_shift, 
+                        edge_vec=edge_vec, edge_len=edge_len, sig=sig, iws=iws, sinf=sinf, ef=ef_torch)
+    return data
+
+
+def get_average_neighbor_count(all_data):
+    neighbor_count = []
+    for adata in all_data:
+        N = adata.pos.shape[0]
+        for i in range(N):
+            neighbor_count.append(len((adata.edge_index[0] == i).nonzero()))
+    return np.array(neighbor_count).mean()
+
+
+def visualize_layers(model):
+    layer_dst = dict(zip(['sc', 'lin1', 'tp', 'lin2'], ['gate', 'tp', 'lin2', 'gate']))
+    try: layers = model.mp.layers
+    except: layers = model.layers
+
+    num_layers = len(layers)
+    num_ops = max([len([k for k in list(layers[i].first._modules.keys()) if k not in ['fc', 'alpha']])
+                   for i in range(num_layers-1)])
+
+    fig, ax = plt.subplots(num_layers, num_ops, figsize=(14,3.5*num_layers))
+    for i in range(num_layers - 1):
+        ops = layers[i].first._modules.copy()
+        ops.pop('fc', None); ops.pop('alpha', None)
+        for j, (k, v) in enumerate(ops.items()):
+            ax[i,j].set_title(k, fontsize=textsize)
+            v.cpu().visualize(ax=ax[i,j])
+            ax[i,j].text(0.7,-0.15,'--> to ' + layer_dst[k], fontsize=textsize-2, transform=ax[i,j].transAxes)
+
+    layer_dst = dict(zip(['sc', 'lin1', 'tp', 'lin2'], ['output', 'tp', 'lin2', 'output']))
+    ops = layers[-1]._modules.copy()
+    ops.pop('fc', None); ops.pop('alpha', None)
+    for j, (k, v) in enumerate(ops.items()):
+        ax[-1,j].set_title(k, fontsize=textsize)
+        v.cpu().visualize(ax=ax[-1,j])
+        ax[-1,j].text(0.7,-0.15,'--> to ' + layer_dst[k], fontsize=textsize-2, transform=ax[-1,j].transAxes)
+
+    fig.subplots_adjust(wspace=0.3, hspace=0.5)
+
+
+def train_test_split(dataset, train_percent=0.9, seed=None):
+    rng = None
+    if seed is not None:
+        rng = np.random.default_rng(seed=seed)
+    else:
+        rng = np.random.default_rng()
+    N = int(train_percent*len(dataset))
+    inds = np.arange(0, len(dataset), 1)
+    rng.shuffle(inds)
+    train_data = []
+    test_data = []
+    for i in range(len(inds)):
+        if i < N:
+            train_data.append(dataset[inds[i]])
+        else:
+            test_data.append(dataset[inds[i]])
+    return train_data, test_data
+
+
+def evaluate_sinf(model, dataset_org):
+    dataset = copy.deepcopy(dataset_org)
+    model.eval()
+
+    n_atoms = dataset[0].sinf.shape[0]    
+    n_orbitals = dataset[0].sinf.shape[1]
+    fig, axs = plt.subplots(n_atoms)
+    preds = np.zeros((len(dataset), n_atoms, n_orbitals))
+    acts = np.zeros((len(dataset), n_atoms, n_orbitals)) 
+    for i in range(len(dataset)):
+        preds[i] = model(dataset[i]).cpu().detach().numpy()
+        acts[i] = dataset[i].sinf.numpy()
+    
+    colors = ["red", "green", "blue", "orange", "purple"]
+    for i in range(len(dataset)):
+        for j in range(n_atoms):
+            axs[j].scatter(preds[i, j], acts[i,j], c=colors)
+
+
+    amin = np.amin(acts)
+    amax = np.amax(acts)
+    
+    for i in range(n_atoms):
+        x = np.linspace(amin, amax, 1000)
+        axs[i].set_xlim(amin-0.2, amax+0.2)
+        axs[i].set_ylim(amin-0.2, amax+0.2)
+        axs[i].plot(x, x, linestyle="--", c="black")
+    
+    plt.show()
+
+
+def train_sinf(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.1, device="cpu", batch_size=1):
+    model.to(device)
+
+    train_data, val_data = train_test_split(dataset, train_percent= 1-val_percent)
+
+    for step in range(max_iter):
+
+        ## Training 
+        model.train()
+        dataloader = copy.deepcopy(train_data)
+        loss_cumulative = 0.0
+        for d in tqdm(dataloader):
+            d.to(device)
+            output = model(d)
+            # if batch_size == 1:
+            #     output = output.unsqueeze(0)
+            loss = loss_fn(output, d.sinf)
+            loss_cumulative += loss.cpu().detach().item()
+            optimizer.zero_grad()
+            loss.backward()
+            # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+
+        ## Valdiation 
+        model.eval()
+        val_dataloader = copy.deepcopy(val_data)
+        loss_val = 0
+        for vi, v in enumerate(val_dataloader):
+            val_out = model(v)
+            # if batch_size == 1:
+            #     val_out = val_out.unsqueeze(0)
+            if vi == 0:
+                print(val_out)
+                print(v.sinf)
+            loss = loss_fn(val_out, v.sinf)
+            loss_val += loss.cpu().detach().item()
+
+        print("Epoch", str(step),"Train Loss =", loss_cumulative/len(dataloader), "Val Loss =", loss_val/len(val_dataloader))
+        # scheduler.step(loss_val)
+        scheduler.step()
+    if save_path is not None:
+        print("Saving model to", save_path)
+        torch.save(model.state_dict(), save_path)
+
+
+def train_full_sig(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.9, device="cpu", batch_size=1):
+    model.to(device)
+
+    train_data, val_data = train_test_split(dataset, test_percent=val_percent)
+
+    for step in range(max_iter):
+
+        ## Training 
+        model.train()
+        dataloader = copy.deepcopy(train_data)
+        loss_cumulative = 0.0
+        for d in tqdm(dataloader):
+            d.to(device)
+            output = model(d)
+            # if batch_size == 1:
+            #     output = output.unsqueeze(0)
+            loss = loss_fn(output, d.sig[0])
+            loss_cumulative += loss.cpu().detach().item()
+            optimizer.zero_grad()
+            loss.backward()
+            # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+
+        ## Valdiation 
+        model.eval()
+        val_dataloader = copy.deepcopy(val_data)
+        loss_val = 0
+        for vi, v in enumerate(val_dataloader):
+            val_out = model(v)
+            if batch_size == 1:
+                val_out = val_out.unsqueeze(0)
+            # if vi == 0:
+            #     print(val_out)
+            #     print(v.sig)
+            loss = loss_fn(val_out, v.sig)
+            loss_val += loss.cpu().detach().item()
+
+        print("Epoch", str(step),"Train Loss =", loss_cumulative/len(dataloader), "Val Loss =", loss_val/len(val_dataloader))
+        # scheduler.step(loss_val)
+        scheduler.step()
+    if save_path is not None:
+        print("Saving model to", save_path)
+        torch.save(model.state_dict(), save_path)
+
+
+def evaluate_full_sig(model, dataset_org, orbital):
+    dataset = copy.deepcopy(dataset_org)
+    model.eval()
+    iws = dataset[0].iws
+
+    N1 = 3
+    N2 = 3
+    fig, axs = plt.subplots(N1, N2)
+
+    colors_gt = ["lightcoral", "firebrick", "lightsalmon", "saddlebrown"]
+    colors_pred = ["cornsilk", "khaki", "yellowgreen", "lawngreen"]
+
+    for i in range(N1):
+        for j in range(N2):
+            output = model(dataset[N2*i+j]).detach().numpy()
+            N_sig_len = int(output.shape[1])
+            if i == 0 and j ==0:
+                axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,0, :, orbital, 0].numpy(), c="black", label="True DMFT $\Sigma$(i$\omega_n$)")
+                axs[i,j].plot(iws[0], output[0, :, orbital, 0], c="red", marker='o', markersize=2, label="Predicted DMFT Re{$\Sigma$(i$\omega_n$)}")
+                axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,0, :, orbital, 1].numpy(), c="black")
+                axs[i,j].plot(iws[0], output[0, :, orbital, 1], c="blue", marker='o', markersize=2, label="Predicted DMFT Im{$\Sigma$(i$\omega_n$)}")
+            else:
+                axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,0, :, orbital, 0].numpy(), c="black")
+                axs[i,j].plot(iws[0], output[0, :, orbital, 0], c="red", marker='o', markersize=2)
+                axs[i,j].plot(iws[0], dataset[N2*i + j].sig[0,0, :, orbital, 1].numpy().real, c="black")
+                axs[i,j].plot(iws[0], output[0, :, orbital, 1].real, c="blue", marker='o', markersize=2)
+    
+    fig.add_subplot(111, frameon=False)
+    # hide tick and tick label of the big axis
+    plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+    plt.xlabel("i$\omega_n$", labelpad=5, fontsize=25)
+    plt.ylabel("$\Sigma$(i$\omega_n$)", labelpad=20, fontsize=25)
+
+    handles, labels = axs[0,0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper right")
+    # plt.tight_layout()
+    plt.show()
+
+
+def train_ef(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.1, device="cpu", batch_size=1):
+    model.to(device)
+
+    train_data, val_data = train_test_split(dataset, train_percent= 1-val_percent)
+
+    for step in range(max_iter):
+
+        ## Training 
+        model.train()
+        dataloader = copy.deepcopy(train_data)
+        loss_cumulative = 0.0
+        for d in tqdm(dataloader):
+            d.to(device)
+            output = model(d)
+            # if batch_size == 1:
+            #     output = output.unsqueeze(0)
+            loss = loss_fn(output, d.ef[0])
+            loss_cumulative += loss.cpu().detach().item()
+            optimizer.zero_grad()
+            loss.backward()
+            # torch.nn.utils.clip_grad_norm_(model.parameters(), 1.0)
+            optimizer.step()
+
+        ## Valdiation 
+        model.eval()
+        val_dataloader = copy.deepcopy(val_data)
+        loss_val = 0
+        for vi, v in enumerate(val_dataloader):
+            val_out = model(v)
+            # if batch_size == 1:
+            #     val_out = val_out.unsqueeze(0)
+            # if vi == 0:
+            #     print(val_out)
+            #     print(v.ef)
+            loss = loss_fn(val_out, v.ef[0])
+            loss_val += loss.cpu().detach().item()
+
+        print("Epoch", str(step),"Train Loss =", loss_cumulative/len(dataloader), "Val Loss =", loss_val/len(val_dataloader))
+        # scheduler.step(loss_val)
+        scheduler.step()
+    if save_path is not None:
+        print("Saving model to", save_path)
+        torch.save(model.state_dict(), save_path)
+
+
+def evaluate_ef(model, dataset_org):
+    dataset = copy.deepcopy(dataset_org)
+    model.eval()
+    
+    preds = []
+    acts = []
+    for i in range(len(dataset)):
+        preds.append(model(dataset[i]).cpu().detach().item())
+        acts.append(dataset[i].ef[0].item())
+    plt.scatter(preds, acts)
+    x = np.linspace(np.amin(acts), np.amax(acts), 1000)
+    plt.plot(x, x, linestyle="--", c="black")
+    plt.xlim(np.amin(acts)-1 , np.amax(acts) + 1)
+    plt.ylim(np.amin(acts)-1 , np.amax(acts) + 1)
+    plt.show()
+
+
+def build_data(atoms, sig_texts=None, efs=None, radial_cutoff=3.0):
+    type_encoding = {}
+    species_am = []
+    for Z in range(1, 119):
+        species = Atom(Z)
+        type_encoding[species.symbol] = Z-1
+        species_am.append(species.mass)
+    type_onehot = torch.eye(len(type_encoding))
+    am_onehot = torch.diag(torch.tensor(species_am))
+    all_data = []
+    for i in range(len(atoms)):
+        tsig_text = None 
+        tef = None 
+        if sig_texts is not None:
+            tsig_text = sig_texts[i]
+        if efs is not None:
+            tef = efs[i]
+        adata = build_datapoint(atoms[i], type_encoding, type_onehot, am_onehot, tsig_text, tef, radial_cutoff)
+        all_data.append(adata)
+    return all_data
+    
+
+def get_sig_file_text(iws, sig, sinf):
+    # header1 = "# s_oo= [25.94191367094248, 25.97927152427038, 26.05945867814713, 26.06381971479536, 26.03294235710237, 26.04283272307152, 25.96716318919691, 26.0122262627843, 25.98858687107719, 26.0708059030178, 26.04368953407744, 26.0672438591148, 26.14826552518523, 26.14590929289391, 26.12531807149132, 25.96790067151829, 25.96873105519074, 25.97613803667094, 25.95033170658937, 25.97092521181814]\n"
+    header1 = "# s_oo= [" + ', '.join(f'{x:.14f}' for x in sinf) + "]\n"
+    header2 = "# Edc= [25.175, 25.175, 25.175, 25.175, 25.175, 25.175, 25.175, 25.175, 25.175, 25.175, 25.175, 25.175, 25.175, 25.175, 25.175, 25.175, 25.175, 25.175, 25.175, 25.175]\n"
+    outdata = np.zeros((sig.shape[1], 1 + 2*sig.shape[0]*sig.shape[2]))
+    outdata[:,0] = iws 
+
+    ## sig in form [n_atoms, n_matsubara, n_orbitals, [real, imag]]
+    for a in range(sig.shape[0]):
+        for o in range(sig.shape[2]):
+            outdata[:,1 + 10*a + 2*o] = sig[a,:,o,0]
+            outdata[:,1 + 10*a + 2*o + 1] = sig[a,:, o, 1]
+    lines = [header1, header2]
+    for i in range(len(outdata)):
+        sig_line = ' '.join(f'{num:.18e}' for num in outdata[i]) + "\n"
+        lines.append(sig_line)
+    return lines

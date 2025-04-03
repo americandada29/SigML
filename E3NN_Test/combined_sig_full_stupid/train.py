@@ -92,10 +92,11 @@ source_dir = "../ATOMS_SIGS_DATA/"
 atoms = []
 sig_texts = []
 for p in os.listdir(source_dir):
-  with open("atoms_sigs.pkl","rb") as f:
+  with open(source_dir + p,"rb") as f:
       tatoms, tsig_texts = pickle.load(f)
   atoms.extend(tatoms)
   sig_texts.extend(tsig_texts)
+
 
 torch.set_default_dtype(torch.float32)
 radial_cutoff = 3.0
@@ -151,10 +152,10 @@ loss_fn = torch.nn.SmoothL1Loss(reduction="sum")
 #train_data, test_data = train_test_split(all_data, seed=34533)
 train_data, test_data = train_test_split(all_data, test_percent = 0.9, seed=34533)
 
-save_path = "beastly_model.pth"
+save_path = "full_data_model_20epochs.pth"
 
-#model.load_state_dict(torch.load(save_path))
-#train(model, opt, train_data, loss_fn, scheduler, save_path= save_path, max_iter=10)
+# model.load_state_dict(torch.load(save_path))
+train(model, opt, train_data, loss_fn, scheduler, save_path= save_path, max_iter=20)
 model.load_state_dict(torch.load(save_path))
 for o in range(5):
     evaluate(model, test_data, orbital=o)

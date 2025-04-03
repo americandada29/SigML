@@ -426,7 +426,7 @@ class PeriodicNetwork(Network):
 
         ## Trainable normalization layer
         self.n_matsubara = self.irreps_out[0][0]
-        self.atom_wise_norm = AtomWiseLayerNorm(N_atoms=4, N_features=5, N_matsubara=self.n_matsubara)
+        # self.atom_wise_norm = AtomWiseLayerNorm(N_atoms=4, N_features=5, N_matsubara=self.n_matsubara)
         
 
 
