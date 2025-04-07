@@ -445,3 +445,51 @@ def get_sig_file_text(iws, sig, sinf):
         sig_line = ' '.join(f'{num:.18e}' for num in outdata[i]) + "\n"
         lines.append(sig_line)
     return lines
+
+
+def plot_predictions(dataset, ind_restrict=None, orbital=0):
+    ### Filter out irrelevant points ###
+    filtered_dataset = []
+    if ind_restrict is not None:
+        for i in range(len(dataset)):
+            if i not in ind_restrict:
+                filtered_dataset.append(dataset[i])
+    else:
+        filtered_dataset = dataset
+
+    select_inds = np.arange(0, len(filtered_dataset), 1)
+    np.random.shuffle(select_inds)
+
+
+    ### Plot 9 random datapoints ### 
+    iws = dataset[0].iws
+    N1 = 3
+    N2 = 3
+    fig, axs = plt.subplots(N1, N2)
+
+    colors_gt = ["lightcoral", "firebrick", "lightsalmon", "saddlebrown"]
+    colors_pred = ["cornsilk", "khaki", "yellowgreen", "lawngreen"]
+
+    for i in range(N1):
+        for j in range(N2):
+            ind = select_inds[N2*i + j]
+            if i == 0 and j ==0:
+                axs[i,j].plot(iws[0], dataset[ind].sig[0,0, :, orbital, 0].numpy(), c="red", label="Pred Re{$\Sigma$(i$\omega_n$)}")
+                axs[i,j].plot(iws[0], dataset[ind].sig[0,0, :, orbital, 1].numpy(), c="blue", label="Pred Im{$\Sigma$(i$\omega_n$)}")
+            else:
+                axs[i,j].plot(iws[0], dataset[ind].sig[0,0, :, orbital, 0].numpy(), c="red")
+                axs[i,j].plot(iws[0], dataset[ind].sig[0,0, :, orbital, 1].numpy(), c="blue")
+            axs[i,j].axhline(y=0, linestyle="--", c="black")
+
+    fig.add_subplot(111, frameon=False)
+    # hide tick and tick label of the big axis
+    plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+    plt.xlabel("i$\omega_n$", labelpad=5, fontsize=25)
+    plt.ylabel("$\Sigma$(i$\omega_n$)", labelpad=20, fontsize=25)
+
+    handles, labels = axs[0,0].get_legend_handles_labels()
+    fig.legend(handles, labels, loc="upper right")
+    # plt.tight_layout()
+    plt.show()
+
+

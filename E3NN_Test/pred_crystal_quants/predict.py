@@ -20,7 +20,7 @@ for pf in os.listdir(source_dir):
    psig_texts.extend(tsig_texts)
    pefs.extend(tefs)
 
-ini_data = np.loadtxt(StringIO(psig_texts[0]), dtype=np.float128)
+ini_data = np.loadtxt(StringIO(psig_texts[0]), dtype=np.float64)
 
 
 
@@ -55,7 +55,7 @@ ave_neighbors = get_average_neighbor_count(all_data)
 
 ef_model = get_standard_ef_model(ave_neighbors, "../SAVED_MODELS/ef_model.pth")
 sinf_model = get_standard_sinf_model(ave_neighbors, "../SAVED_MODELS/sinf_model.pth")
-full_sig_model = get_standard_full_sig_model(n_matsubara, ave_neighbors, "../SAVED_MODELS/full_sig_model.pth")
+full_sig_model = get_standard_full_sig_model(n_matsubara, ave_neighbors, "../SAVED_MODELS/bcc_data_model_20epochs.pth")
 
 iws = ini_data[:,0]
 

@@ -88,12 +88,16 @@ def get_average_neighbor_count(all_data):
             neighbor_count.append(len((adata.edge_index[0] == i).nonzero()))
     return np.array(neighbor_count)
 
-source_dir = "../ATOMS_SIGS_DATA/"
+#select_list = ["rattle_3_asefs.pkl", "rattle_2_asefs.pkl", "rattle_asefs.pkl"]
+#select_list = ["rattle_3_asefs.pkl"]
+source_dir = "../ATOMS_SIGS_EFS_DATA/"
 atoms = []
 sig_texts = []
 for p in os.listdir(source_dir):
+  #if p not in select_list:
+  #    continue
   with open(source_dir + p,"rb") as f:
-      tatoms, tsig_texts = pickle.load(f)
+      tatoms, tsig_texts, tefs = pickle.load(f)
   atoms.extend(tatoms)
   sig_texts.extend(tsig_texts)
 
@@ -117,11 +121,9 @@ for i in range(len(atoms)):
 neighbor_count = get_average_neighbor_count(all_data)
 
 
-## Dividing out dim by 5 to account for 5D representation of l=2 spherical harmonics 
+### Initializing model ###
 out_dim = int(all_data[0].sig.shape[2])
 em_dim = 32
-
-
 model = CrystalSelfEnergyNetwork(in_dim=118,
                         em_dim=em_dim,
                         out_dim=out_dim,
@@ -154,8 +156,8 @@ train_data, test_data = train_test_split(all_data, test_percent = 0.9, seed=3453
 
 save_path = "full_data_model_20epochs.pth"
 
-# model.load_state_dict(torch.load(save_path))
-train(model, opt, train_data, loss_fn, scheduler, save_path= save_path, max_iter=20)
+#model.load_state_dict(torch.load(save_path))
+#train(model, opt, train_data, loss_fn, scheduler, save_path= save_path, max_iter=10)
 model.load_state_dict(torch.load(save_path))
 for o in range(5):
     evaluate(model, test_data, orbital=o)

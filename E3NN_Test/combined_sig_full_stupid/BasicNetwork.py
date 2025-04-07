@@ -484,8 +484,8 @@ def evaluate(model, dataset_org, orbital):
     model.eval()
     iws = dataset[0].iws
 
-    N1 = 3
-    N2 = 3
+    N1 = 2
+    N2 = 2
     fig, axs = plt.subplots(N1, N2)
 
     colors_gt = ["lightcoral", "firebrick", "lightsalmon", "saddlebrown"]
