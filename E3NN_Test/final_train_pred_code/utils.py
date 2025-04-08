@@ -7,11 +7,14 @@ import e3nn
 from e3nn import o3
 from typing import Dict, Union
 from tqdm import tqdm
+from nequip.ase.nequip_calculator import nequip_calculator
 
 # crystal structure data
 from ase import Atom, Atoms
 from ase.neighborlist import neighbor_list
 from ase.visualize.plot import plot_atoms
+from ase.calculators.singlepoint import SinglePointCalculator
+from ase.io import read, write
 from pymatgen.io.ase import AseAtomsAdaptor as AAA
 from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as SPA
 
@@ -23,12 +26,14 @@ from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import pickle 
 import copy
 import io
+import os
 
 # from dlr_testing import parse_sig_file
 # from BasicNetwork import PeriodicNetwork, train, evaluate, visualize_layers, train_test_split, PeakEmphasisSmoothLoss, CrystalSelfEnergyNetwork
-from Full_Sig_Model import CrystalSelfEnergyNetwork
+from Sig_iws_Model import CrystalSelfEnergyNetwork
 from EF_Model import EF_Model
 from Sinf_Model import Sinf_Model
+# from utils_nequip import init_nequip_model
 
 # # format progress bar
 # bar_format = '{l_bar}{bar:10}{r_bar}{bar:-10b}'
@@ -199,7 +204,6 @@ def train_test_split(dataset, train_percent=0.9, seed=None):
         if i < N:
             train_data.append(dataset[inds[i]])
         else:
-            print(inds[i])
             test_data.append(dataset[inds[i]])
     return train_data, test_data
 
@@ -436,6 +440,7 @@ def assert_sig_conditions(sig_text):
                 break
     return passed
 
+
 def build_data(atoms, sig_texts=None, efs=None, radial_cutoff=3.0):
     type_encoding = {}
     species_am = []
@@ -528,3 +533,43 @@ def plot_predictions(dataset, ind_restrict=None, orbital=0):
     plt.show()
 
 
+def train_nequip_ef(config_path, dataset):
+    atoms = []
+    for d in dataset:
+        cell = d.lattice[0].numpy()
+        pos = d.pos.numpy()
+        ef = d.ef[0].item()
+        tatom = Atoms(symbols = d.symbol, positions = pos, cell = cell, pbc=True)
+        tatom.calc = SinglePointCalculator(atoms=tatom, energy=ef, forces=None, stress=None)
+        atoms.append(tatom)
+    write("dmft_atoms_efs.extxyz", atoms, format='extxyz')
+    os.system("rm -r results")
+    os.system("python utils_nequip.py " + config_path + " " + str(len(atoms)))
+
+
+def eval_nequip_ef(model_path, dataset):
+    if os.path.isfile(model_path):
+        print("Deployed model already exists, using that")
+    else:
+        print("Deploying model...")
+        os.system("nequip-deploy build --train-dir results/dmft/fe-dmft-ef-model/ " + model_path)
+    calc = nequip_calculator(model_path)
+    pred_efs = []
+    act_efs = []
+    for d in tqdm(dataset, desc="Evalulating NequIP fermi energy predictions..."):
+        cell = d.lattice[0].numpy()
+        pos = d.pos.numpy()
+        ef = d.ef[0].item()
+        tatom = Atoms(symbols = d.symbol, positions = pos, cell = cell, pbc=True)
+        tatom.calc = calc 
+        pred_efs.append(tatom.get_potential_energy())
+        act_efs.append(ef)
+    plt.scatter(pred_efs, act_efs, c="red")
+    plt.xlim(np.amin(act_efs), np.amax(act_efs))
+    plt.ylim(np.amin(act_efs), np.amax(act_efs))
+    x = np.linspace(np.amin(act_efs), np.amax(act_efs), 1000)
+    plt.plot(x, x, linestyle="--", c='black')
+    plt.xlabel("E$_f$ Predictions (eV)")
+    plt.ylabel("E$_f$ Actual (eV)")
+    plt.show()
+    

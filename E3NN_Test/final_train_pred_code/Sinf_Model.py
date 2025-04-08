@@ -52,7 +52,7 @@ def get_standard_sinf_model(ave_neighbor_count, weight_path=None):
                             reduce_output=False)
     if weight_path is not None:
         model.load_state_dict(torch.load(weight_path))
-    return model
+    return model.to(torch.float32)
 
 
 

@@ -2,3 +2,5 @@ beastly_model*
 full_data_model*
 full_sig_model*
 bcc_data_model*
+**/results/
+**/__pycache__/

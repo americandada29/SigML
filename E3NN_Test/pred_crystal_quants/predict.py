@@ -1,6 +1,6 @@
 from EF_Model import get_standard_ef_model
 from Sinf_Model import get_standard_sinf_model
-from Full_Sig_Model import get_standard_full_sig_model
+from Sig_iws_Model import get_standard_full_sig_model
 from utils import build_data, get_average_neighbor_count, get_sig_file_text
 import pickle 
 import os 
