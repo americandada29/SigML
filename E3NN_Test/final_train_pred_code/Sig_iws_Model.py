@@ -7,7 +7,40 @@ import copy
 from network import Network
 
 
-class PeriodicNetwork(Network):
+class PeriodicNetworkReal(Network):
+    def __init__(self, in_dim, em_dim, **kwargs):            
+        # override the `reduce_output` keyword to instead perform an averge over atom contributions    
+        self.pool = False
+        if kwargs['reduce_output'] == True:
+            kwargs['reduce_output'] = False
+            self.pool = True
+            
+        super().__init__(**kwargs)
+
+        self.n_matsubara = self.irreps_out[0][0]
+
+        # embed the mass-weighted one-hot encoding
+        self.em = nn.Linear(in_dim, em_dim)
+
+        ## Learnable scaling factor
+        self.gamma = torch.nn.Parameter(torch.tensor(1.0))
+
+
+    def forward(self, data_inp: Union[tg.data.Data, Dict[str, torch.Tensor]]) -> torch.Tensor:
+        data = copy.deepcopy(data_inp)
+        data.x = F.sigmoid(self.em(data.x))
+        data.z = F.sigmoid(self.em(data.z))
+        output = super().forward(data)
+        output = F.tanh(output)
+        eps = 1e-8
+        norm = torch.norm(output, p=2, dim=1, keepdim=True)
+        output = self.gamma * output / (norm + eps)
+        # output = -1*output
+        
+        return output
+    
+
+class PeriodicNetworkImag(Network):
     def __init__(self, in_dim, em_dim, **kwargs):            
         # override the `reduce_output` keyword to instead perform an averge over atom contributions    
         self.pool = False
@@ -47,7 +80,7 @@ class CrystalSelfEnergyNetwork(torch.nn.Module):
         models_real = []
         models_imag = []
         for o in range(orbital_count):
-            model_real = PeriodicNetwork(in_dim = in_dim,
+            model_real = PeriodicNetworkReal(in_dim = in_dim,
                             em_dim= em_dim,
                             irreps_in = str(em_dim) + "x0e",
                             irreps_out = str(out_dim) + "x0e",
@@ -58,7 +91,7 @@ class CrystalSelfEnergyNetwork(torch.nn.Module):
                             max_radius=radial_cutoff,
                             num_neighbors=neighbor_count.mean(),
                             reduce_output=False)
-            model_imag = PeriodicNetwork(in_dim = in_dim,
+            model_imag = PeriodicNetworkImag(in_dim = in_dim,
                             em_dim= em_dim,
                             irreps_in = str(em_dim) + "x0e",
                             irreps_out = str(out_dim) + "x0e",

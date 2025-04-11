@@ -23,23 +23,23 @@ import copy
 from scipy.optimize import curve_fit
 
 # format progress bar
-bar_format = '{l_bar}{bar:10}{r_bar}{bar:-10b}'
+# bar_format = '{l_bar}{bar:10}{r_bar}{bar:-10b}'
 
 
 # standard formatting for plots
-fontsize = 16
-textsize = 14
-sub = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
-plt.rcParams['font.family'] = 'lato'
-plt.rcParams['axes.linewidth'] = 1
-plt.rcParams['mathtext.default'] = 'regular'
-plt.rcParams['xtick.bottom'] = True
-plt.rcParams['ytick.left'] = True
-plt.rcParams['font.size'] = fontsize
-plt.rcParams['axes.labelsize'] = fontsize
-plt.rcParams['xtick.labelsize'] = fontsize
-plt.rcParams['ytick.labelsize'] = fontsize
-plt.rcParams['legend.fontsize'] = textsize
+# fontsize = 16
+# textsize = 14
+# sub = str.maketrans("0123456789", "₀₁₂₃₄₅₆₇₈₉")
+# plt.rcParams['font.family'] = 'lato'
+# plt.rcParams['axes.linewidth'] = 1
+# plt.rcParams['mathtext.default'] = 'regular'
+# plt.rcParams['xtick.bottom'] = True
+# plt.rcParams['ytick.left'] = True
+# plt.rcParams['font.size'] = fontsize
+# plt.rcParams['axes.labelsize'] = fontsize
+# plt.rcParams['xtick.labelsize'] = fontsize
+# plt.rcParams['ytick.labelsize'] = fontsize
+# plt.rcParams['legend.fontsize'] = textsize
 
 
 
@@ -332,10 +332,15 @@ class PeriodicNetwork(Network):
         return output
 
 
-def train_test_split(dataset, test_percent=0.9):
-    N = int(test_percent*len(dataset))
+def train_test_split(dataset, train_percent=0.9, seed=None):
+    rng = None
+    if seed is not None:
+        rng = np.random.default_rng(seed=seed)
+    else:
+        rng = np.random.default_rng()
+    N = int(train_percent*len(dataset))
     inds = np.arange(0, len(dataset), 1)
-    np.random.shuffle(inds)
+    rng.shuffle(inds)
     train_data = []
     test_data = []
     for i in range(len(inds)):
@@ -346,10 +351,10 @@ def train_test_split(dataset, test_percent=0.9):
     return train_data, test_data
 
 
-def train(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.9, device="cpu", batch_size=1):
+def train(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.1, device="cpu", batch_size=1):
     model.to(device)
 
-    train_data, val_data = train_test_split(dataset, test_percent=val_percent)
+    train_data, val_data = train_test_split(dataset, train_percent=(1-val_percent))
 
     for step in range(max_iter):
 
@@ -390,8 +395,8 @@ def evaluate(model, dataset):
     model.eval()
     iws = dataset[0].iws
 
-    N1 = 3
-    N2 = 3
+    N1 = 4
+    N2 = 4
     fig, axs = plt.subplots(N1, N2)
 
     colors_gt = ["lightcoral", "firebrick", "lightsalmon", "saddlebrown"]

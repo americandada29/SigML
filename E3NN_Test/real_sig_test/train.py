@@ -19,11 +19,26 @@ import matplotlib as mpl
 import matplotlib.pyplot as plt
 from mpl_toolkits.axes_grid1.inset_locator import inset_axes
 import pickle 
+import os
 
 from dlr_testing import parse_sig_file
 from BasicNetwork import PeriodicNetwork, WeightedMSELoss, train, evaluate, train_test_split
+from pymatgen.io.ase import AseAtomsAdaptor as AAA
+from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as SPA
 
-
+def cast_sig_over_symmetric_atoms(atom, sig, cor_atoms):
+    spa = SPA(AAA.get_structure(atom), symprec=1e-5)
+    sym_struct = spa.get_symmetrized_structure()
+    eq_inds = sym_struct.equivalent_indices
+    syms = atom.get_chemical_symbols()
+    full_sig = np.zeros((len(atom), sig.shape[1])).astype(np.complex128)
+    count = 0
+    for i in range(len(eq_inds)):
+        if syms[eq_inds[i][0]] in cor_atoms:
+            for eqi in eq_inds[i]:
+                full_sig[eqi] = sig[count]
+            count += 1
+    return full_sig
 
 
 def build_data(atom, sig_text, type_encoding, type_onehot, am_onehot, r_max=5.0):
@@ -35,7 +50,9 @@ def build_data(atom, sig_text, type_encoding, type_onehot, am_onehot, r_max=5.0)
 
     #### IMPORTANT: Only taking the imaginary part of the self energy for training for now, also only first orbital (d_xy or something) self energy #####
     arb_cutoff = 1000000000
-    sig = torch.from_numpy(sig.real[:,0,:arb_cutoff]).unsqueeze(0).type(torch.float32)
+    sig = sig.real[:,0,:arb_cutoff]
+    sig = cast_sig_over_symmetric_atoms(atom, sig, cor_atoms=["Fe"])
+    sig = torch.from_numpy(sig.real).unsqueeze(0).type(torch.float32)
     iws = iws[:, :arb_cutoff]
 
 
@@ -67,12 +84,19 @@ def get_average_neighbor_count(all_data):
     return np.array(neighbor_count)
 
 
-with open("atoms_sigs.pkl","rb") as f:
-    atoms, sig_texts = pickle.load(f)
+source_dir = "../FeO_ATOMS_SIGS_EFS_DATA/"
+atoms = []
+sig_texts = []
+for p in os.listdir(source_dir):
+    with open(source_dir + p,"rb") as f:
+        tatoms, tsig_texts, _ = pickle.load(f)
+    atoms.extend(tatoms)
+    sig_texts.extend(tsig_texts)
+
 
 
 torch.set_default_dtype(torch.float32)
-radial_cutoff = 3.0
+radial_cutoff = 4.0
 
 type_encoding = {}
 species_am = []
@@ -99,23 +123,24 @@ model = PeriodicNetwork(in_dim = 118,
                         irreps_out = str(out_dim) + "x0e",
                         irreps_node_attr = str(em_dim) + "x0e",
                         layers=2,
-                        mul=32,
-                        lmax=1,
+                        mul=64,
+                        lmax=2,
                         max_radius=radial_cutoff,
                         num_neighbors=neighbor_count.mean(),
                         reduce_output=False)
 
 
 opt = torch.optim.AdamW(model.parameters(), lr=0.01, weight_decay=0.05)
-scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=5, gamma=0.1)
-# loss_fn = torch.nn.MSELoss()
-loss_fn = WeightedMSELoss(weight_ratio=100.0, cutoff_fraction=0.05)
+scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=5, gamma=0.25)
+loss_fn = torch.nn.MSELoss()
+# loss_fn = WeightedMSELoss(weight_ratio=100.0, cutoff_fraction=0.05)
 
-train_data, test_data = train_test_split(all_data)
+train_data, test_data = train_test_split(all_data, seed=34234)
 
 save_path = "beastly_model.pth"
 
-train(model, opt, train_data, loss_fn, scheduler, save_path= save_path, max_iter=20)
+model.load_state_dict(torch.load(save_path))
+train(model, opt, train_data, loss_fn, scheduler, save_path= save_path, max_iter=10)
 model.load_state_dict(torch.load(save_path))
 evaluate(model, test_data)
 

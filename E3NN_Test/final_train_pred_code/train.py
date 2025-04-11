@@ -12,7 +12,7 @@ from tqdm import tqdm
 import torch
 
 ### Testing on previous datasets with already provided self energies ###
-source_dir = "../ATOMS_SIGS_EFS_DATA/"
+source_dir = "../FeO_ATOMS_SIGS_EFS_DATA/"
 patoms = []
 psig_texts = []
 pefs = []
@@ -31,19 +31,22 @@ print("Training on dataset of length", len(train_data))
 
 
 
-### Training for the Sig(iwn) - Sig(iwn -> infty) model ###
-# full_sig_model = get_standard_full_sig_model(n_matsubara, ave_neighbors)
-# opt = torch.optim.AdamW(full_sig_model.parameters(), lr=0.01, weight_decay=0.05)
-# scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=5, gamma=0.25)
-# loss_fn = torch.nn.SmoothL1Loss(reduction="sum")
-# save_path = "SAVED_MODELS/full_sig_model.pth"
 
-# full_sig_model.load_state_dict(torch.load(save_path))
-# train_full_sig(full_sig_model, opt, train_data, loss_fn, scheduler, save_path = save_path, max_iter=15, val_percent = 0.1, device="cpu", batch_size=1)
-# full_sig_model.load_state_dict(torch.load(save_path))
-# for o in range(5):
-#     evaluate_full_sig(full_sig_model, test_data, orbital=o)
-# exit()
+
+
+### Training for the Sig(iwn) - Sig(iwn -> infty) model ###
+full_sig_model = get_standard_full_sig_model(n_matsubara, ave_neighbors)
+opt = torch.optim.AdamW(full_sig_model.parameters(), lr=0.01, weight_decay=0.05)
+scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=5, gamma=0.25)
+loss_fn = torch.nn.SmoothL1Loss(reduction="sum")
+save_path = "SAVED_MODELS/feo_full_sig_model.pth"
+
+full_sig_model.load_state_dict(torch.load(save_path))
+train_full_sig(full_sig_model, opt, train_data, loss_fn, scheduler, save_path = save_path, max_iter=15, val_percent = 0.1, device="cpu", batch_size=1)
+full_sig_model.load_state_dict(torch.load(save_path))
+for o in range(5):
+    evaluate_full_sig(full_sig_model, test_data, orbital=o)
+exit()
 ############################################################
 
 
@@ -62,17 +65,17 @@ print("Training on dataset of length", len(train_data))
 
 
 ############## Training for the S_infty model ############################
-sinf_model = get_standard_sinf_model(ave_neighbors)
-opt = torch.optim.AdamW(sinf_model.parameters(), lr=0.01, weight_decay=0.05)
-scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=5, gamma=0.5)
-loss_fn = torch.nn.SmoothL1Loss(reduction="sum")
-save_path = "SAVED_MODELS/sinf_model.pth"
+# sinf_model = get_standard_sinf_model(ave_neighbors)
+# opt = torch.optim.AdamW(sinf_model.parameters(), lr=0.01, weight_decay=0.05)
+# scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=5, gamma=0.5)
+# loss_fn = torch.nn.SmoothL1Loss(reduction="sum")
+# save_path = "SAVED_MODELS/sinf_model.pth"
 
-sinf_model.load_state_dict(torch.load(save_path))
-train_sinf(sinf_model, opt, train_data, loss_fn, scheduler, save_path, max_iter=5)
-sinf_model.load_state_dict(torch.load(save_path))
-evaluate_sinf(sinf_model, test_data)
-exit()
+# sinf_model.load_state_dict(torch.load(save_path))
+# train_sinf(sinf_model, opt, train_data, loss_fn, scheduler, save_path, max_iter=5)
+# sinf_model.load_state_dict(torch.load(save_path))
+# evaluate_sinf(sinf_model, test_data)
+# exit()
 ##########################################################################
 
 
