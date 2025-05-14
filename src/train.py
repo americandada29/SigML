@@ -20,20 +20,20 @@ device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 print(f"Using {device}\n")
 
 read_dataset = False 
-# if "dataset.pkl" in os.listdir():
-#     read_dataset = True 
+if "dataset.pkl" in os.listdir():
+    read_dataset = True 
 
 
 ### Testing on previous datasets with already provided self energies ###
 if not(read_dataset):
-    # source_dir = "../ATOMS_SIGS_EFS_DATA/"
-    source_dir = "/home/akldfas/Documents/DMFT/SIG_ML/Fe/SigML/E3NN_Test/ATOMS_SIGS_EFS_DATA/"
+    source_dir = "../ATOMS_SIGS_EFS_DATA/"
+    # source_dir = "/home/akldfas/Documents/DMFT/SIG_ML/Fe/SigML/E3NN_Test/ATOMS_SIGS_EFS_DATA/"
     patoms = []
     psig_texts = []
     pefs = []
     for pf in os.listdir(source_dir):
-        # if pf != "1_asefs.pkl":
-        #     continue
+        if pf != "1_asefs.pkl" and pf != "4_asefs.pkl":
+            continue
         with open(source_dir + pf, "rb") as f:
             tatoms, tsig_texts, tefs = pickle.load(f)
         patoms.extend(tatoms)
@@ -58,13 +58,13 @@ print("Training on dataset of length", len(train_data))
 
 ### Training for the Sig(iwn) - Sig(iwn -> infty) model ###
 full_sig_model = get_standard_full_sig_model(n_matsubara, ave_neighbors, radial_cutoff=4.0, device=device)
-opt = torch.optim.AdamW(full_sig_model.parameters(), lr=0.01, weight_decay=0.01)
+opt = torch.optim.AdamW(full_sig_model.parameters(), lr=0.001, weight_decay=0.01)
 scheduler = torch.optim.lr_scheduler.StepLR(opt, step_size=5, gamma=0.25)
 loss_fn = torch.nn.SmoothL1Loss(reduction="sum")
 # loss_fn = torch.nn.L1Loss(reduction="sum")
-save_path = "SAVED_MODELS/full_sig_model_fe.pth"
+save_path = "SAVED_MODELS/full_sig_model_fe2o2.pth"
 
-# full_sig_model.load_state_dict(torch.load(save_path))
+full_sig_model.load_state_dict(torch.load(save_path))
 train_full_sig(full_sig_model, opt, train_data, loss_fn, scheduler, save_path = save_path, max_iter=20, val_percent = 0.1, device=device, batch_size=1)
 full_sig_model.load_state_dict(torch.load(save_path))
 for o in range(5):

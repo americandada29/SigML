@@ -3,10 +3,11 @@ import matplotlib.pyplot as plt
 from scipy.special import spherical_jn, eval_legendre
 from scipy.integrate import simpson, romb
 from scipy.optimize import curve_fit
+from triqs.gf import GfImFreq, GfLegendre, MatsubaraToLegendre, LegendreToMatsubara
 
 
-def func_tail(iws, c1):
-  return c1/(iws) 
+def func_tail(iws, c1, c2):
+  return c1/(iws) + c2
 
 
 def xtau(tau, beta):
@@ -110,7 +111,7 @@ def giwfromsiw(iws, Siw):
   return Giw
 
 def fit_hfm(iws, sig, ind_start=20, ind_end=30):
-  fit_matrix = np.zeros((sig.shape[0], 1, sig.shape[-1]))
+  fit_matrix = np.zeros((sig.shape[0], 2, sig.shape[-1]))
   # halfway = len(iws)//2
   for i in range(sig.shape[0]):
     for j in range(sig.shape[-1]):
@@ -118,40 +119,95 @@ def fit_hfm(iws, sig, ind_start=20, ind_end=30):
       fit_matrix[i, :, j] = popt
   return fit_matrix
 
+# def fullatom_gl_from_giw(iws, giw, lmax=50):
+#   Gl = np.zeros((giw.shape[0], lmax, giw.shape[-1]), dtype=np.complex128)
+#   for i in range(giw.shape[0]):
+#     for j in range(giw.shape[-1]):
+#       Gl[i, :, j] = glfromgiw(iws, giw[i, :, j], lmax)
+#   return np.real(Gl)
+
+# def fullatom_giw_from_gl(iws, Gl, denoise=None, fit_tail_cutoff=None, fit_tail_start=None, fit_tail_end=None, ):
+#   Giw = np.zeros((Gl.shape[0], len(iws), Gl.shape[-1]), dtype=np.complex128)
+#   for i in range(Gl.shape[0]):
+#     for j in range(Gl.shape[-1]):
+#       Giw[i, :, j] = giwfromgl(iws, Gl[i, :, j])
+
+
+#   if denoise == "fit_tail":
+#     hind = fit_tail_cutoff 
+#     hfm_matrix = fit_hfm(iws, Giw, fit_tail_start, fit_tail_end)
+#     for i in range(Gl.shape[0]):
+#       for j in range(Gl.shape[-1]):
+#         halfway = iws[hind:]
+#         gf_tail = hfm_matrix[i, 0, j]/(halfway) 
+#         gf_tail_diff = np.diff(gf_tail)
+#         newgftail = [Giw[i, hind, j].imag]
+#         for k in range(0,len(gf_tail_diff)):
+#           newgftail.append(newgftail[-1] + gf_tail_diff[k])
+#         newgftail = np.array(newgftail)
+#         Giw[i, :, j] = np.concatenate((Giw[i, :hind, j], Giw[i, hind:, j].real + 1j*newgftail))
+#     return Giw
+#   elif denoise == "wavelet":
+#     hind = fit_tail_cutoff
+#     for i in range(Giw.shape[0]):
+#       for j in range(Giw.shape[-1]):
+#         halfway = iws[hind:]
+#         gf_tail = Giw[i, hind:, j].imag
+#         fft = np.fft.fft(gf_tail) 
+#         fft = fft.imag 
+#         gf_tail = np.fft.ifft(fft) 
+#         plt.plot(halfway, gf_tail.imag, marker='o', markersize=2)
+#         plt.show()
+#         exit()
+
+#   return Giw
+
+# def fullatom_high_freq_moments(iws, Gl):
+#   beta = np.pi/iws[0]
+#   hfm_matrix = np.zeros((Gl.shape[0], Gl.shape[-1], 3), dtype=np.complex128)
+#   for i in range(Gl.shape[0]):
+#     for j in range(Gl.shape[-1]):
+#       hfm_matrix[i, j, :] = calc_high_freq_moments(Gl[i, :, j], beta)
+#   return hfm_matrix
+
+
 def fullatom_gl_from_giw(iws, giw, lmax=50):
-  Gl = np.zeros((giw.shape[0], lmax, giw.shape[-1]), dtype=np.complex128)
-  for i in range(giw.shape[0]):
-    for j in range(giw.shape[-1]):
-      Gl[i, :, j] = glfromgiw(iws, giw[i, :, j], lmax)
-  return np.real(Gl)
+  beta = float(np.pi/iws[0])
+  Gl_out = np.zeros((giw.shape[0], lmax, giw.shape[-1]), dtype=np.complex128)
 
-def fullatom_giw_from_gl(iws, Gl, fit_tail=False, fit_tail_cutoff=None, fit_tail_start=None, fit_tail_end=None):
-  Giw = np.zeros((Gl.shape[0], len(iws), Gl.shape[-1]), dtype=np.complex128)
-  for i in range(Gl.shape[0]):
-    for j in range(Gl.shape[-1]):
-      Giw[i, :, j] = giwfromgl(iws, Gl[i, :, j])
-  if fit_tail:
-    hind = fit_tail_cutoff 
-    hfm_matrix = fit_hfm(iws, Giw, fit_tail_start, fit_tail_end)
-    for i in range(Gl.shape[0]):
-      for j in range(Gl.shape[-1]):
-        halfway = iws[hind:]
-        gf_tail = hfm_matrix[i, 0, j]/(halfway) 
-        gf_tail_diff = np.diff(gf_tail)
-        newgftail = [Giw[i, hind, j].imag]
-        for k in range(0,len(gf_tail_diff)):
-          newgftail.append(newgftail[-1] + gf_tail_diff[k])
-        newgftail = np.array(newgftail)
-        Giw[i, :, j] = np.concatenate((Giw[i, :hind, j], Giw[i, hind:, j].real + 1j*newgftail))
-    return Giw
-  return Giw
+  # for a in range(giw.shape[0]):
+  #   #### Convoluted way to create diagonal matrix from last elements of Giw ####
+  #   tmp = np.concatenate((np.flip(np.conjugate(giw[a])), giw[a]))
+  #   Giw_data = np.zeros((*tmp.shape, tmp.shape[-1]), dtype=tmp.dtype)
+  #   np.einsum('...jj->...j', Giw_data)[...] = tmp
 
-def fullatom_high_freq_moments(iws, Gl):
-  beta = np.pi/iws[0]
-  hfm_matrix = np.zeros((Gl.shape[0], Gl.shape[-1], 3), dtype=np.complex128)
-  for i in range(Gl.shape[0]):
-    for j in range(Gl.shape[-1]):
-      hfm_matrix[i, j, :] = calc_high_freq_moments(Gl[i, :, j], beta)
-  return hfm_matrix
+  #   Giw_tmp = GfImFreq(beta=beta, indices=np.arange(0, giw.shape[-1]), n_points=giw.shape[1], data=Giw_data) 
+  #   Gl_triqs = GfLegendre(beta=beta, indices=np.arange(0, giw.shape[-1]), n_points=lmax)
+  #   Gl_triqs << MatsubaraToLegendre(Giw_tmp)
+  #   Gl_out[a, :, :] = np.diagonal(Gl_triqs._data, axis1=-1, axis2=-2)    
 
+  for a in range(giw.shape[0]):
+    for o in range(giw.shape[-1]):
+      Giw_data = np.concatenate((np.flip(np.conjugate(giw[a, :, o])), giw[a, :, o])).reshape(-1, 1, 1)
+
+      Giw_tmp = GfImFreq(beta=beta, indices=[1], n_points=giw.shape[1], data=Giw_data) 
+      Gl_triqs = GfLegendre(beta=beta, indices=[1], n_points=lmax)
+      Gl_triqs << MatsubaraToLegendre(Giw_tmp)
+      Gl_out[a, :, o] = Gl_triqs._data.reshape(lmax)  
+  return Gl_out.real
+
+def fullatom_giw_from_gl(iws, Gl):
+  beta = float(np.pi/iws[0])
+  Giw_out = np.zeros((Gl.shape[0], len(iws), Gl.shape[-1]), dtype=np.complex128)
+  for a in range(Gl.shape[0]):
+    #### Convoluted way to create diagonal matrix from last elements of Giw ####
+    tmp = Gl[a]
+    Gl_data = np.zeros((*tmp.shape, tmp.shape[-1]), dtype=np.complex128)
+    np.einsum('...jj->...j', Gl_data)[...] = tmp
+
+    Giw_tmp = GfImFreq(beta=beta, indices=np.arange(0, Gl.shape[-1]), n_points=len(iws)) 
+    Gl_triqs = GfLegendre(beta=beta, indices=np.arange(0, Gl.shape[-1]), n_points=Gl.shape[1], data=Gl_data)
+    Giw_tmp << LegendreToMatsubara(Gl_triqs)
+    Giw_out[a] = np.diagonal(Giw_tmp._data[len(iws):], axis1=-1, axis2=-2)
+  return Giw_out
 

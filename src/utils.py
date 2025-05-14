@@ -132,7 +132,7 @@ def build_datapoint(atom, type_encoding, type_onehot, am_onehot, sig_text=None, 
         sig = build_sig_matrix_fortran(sig)
         cor_atom_inds, eq_inds = get_correlated_atoms_inds(atom, cor_atoms)
         sig_org = copy.deepcopy(sig)
-        sig = fullatom_gl_from_giw(iws, sig, lmax=60)
+        sig = fullatom_gl_from_giw(iws, sig, lmax=30)
         iws = torch.as_tensor(iws, dtype=torch.float32, device=device).unsqueeze(0)
         # sig, cor_atom_inds, eq_inds = cast_sig_over_symmetric_atoms(atom, sig, cor_atoms)
         cor_atom_inds = torch.as_tensor(cor_atom_inds, dtype=torch.int16, device=device)
@@ -428,7 +428,8 @@ def evaluate_full_sig_legendre(model, dataset_org, orbital, atom=0, display=True
             sig = dataset[N2*i+j].sig_org[atom, :, orbital]
 
             output = model(dataset[N2*i+j])[atom:atom+1, :, orbital:orbital+1].detach().cpu().numpy()
-            output = fullatom_giw_from_gl(iws, output, fit_tail=False, fit_tail_cutoff=25, fit_tail_start=25, fit_tail_end=50)[0, :, 0]
+            output = fullatom_giw_from_gl(iws, output)[0, :, 0]
+            
 
             if i == 0 and j ==0:
                 axs[i,j].plot(iws, sig.real, c="black", label="True DMFT Re{$\Sigma$(i$\omega_n$)}")
