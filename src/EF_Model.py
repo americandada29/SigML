@@ -23,7 +23,9 @@ class EF_Model(Network):
 
 
         ## Trainable normalization layer
-        self.n_matsubara = self.irreps_out[0][0]        
+        self.n_matsubara = self.irreps_out[0][0]      
+
+        self.prelu = torch.nn.PReLU()  
 
 
     def forward(self, data_inp: Union[tg.data.Data, Dict[str, torch.Tensor]]) -> torch.Tensor:
@@ -32,7 +34,7 @@ class EF_Model(Network):
         data.z = F.sigmoid(self.em(data.z))
 
         output = super().forward(data)
-        output = torch.relu(output)
+        output = self.prelu(output)
 
         if self.pool == True:
             output = torch.sum(output)
@@ -42,7 +44,7 @@ class EF_Model(Network):
 
 def get_standard_ef_model(ave_neighbor_count, weight_path=None):
     out_dim = 1
-    em_dim = 16
+    em_dim = 32
     model = EF_Model(in_dim = 118,
                     em_dim= em_dim,
                     irreps_in = str(em_dim) + "x0e",
@@ -51,7 +53,7 @@ def get_standard_ef_model(ave_neighbor_count, weight_path=None):
                     layers=2,
                     mul=16,
                     lmax=2,
-                    max_radius=3.0,
+                    max_radius=4.0,
                     num_neighbors=ave_neighbor_count,
                     reduce_output=True)
     if weight_path is not None:

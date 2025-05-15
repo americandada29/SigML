@@ -45,19 +45,20 @@ n_matsubara = dataset[0].sig.shape[2]
 from ase.io import read
 import matplotlib.pyplot as plt
 
-source_save_dir = "../DMFT_3/"
-atoms = read(source_save_dir + "dmft_input_atoms.extxyz", index="150:", format="extxyz")
+source_save_dir = "../DMFT_4_SIGML_LEG/"
+atoms = read(source_save_dir + "dmft_input_atoms.extxyz", index=":", format="extxyz")
 all_data = build_data(atoms)
 
 
 
-ef_calc = nequip_calculator("SAVED_MODELS/nequip_ef_model.pth")
-sinf_model = get_standard_sinf_model(ave_neighbors, weight_path = "SAVED_MODELS/sinf_model.pth", device=device)
-full_sig_model = get_standard_full_sig_model(n_matsubara, ave_neighbors, weight_path = "SAVED_MODELS/full_sig_model.pth", radial_cutoff=4.0, device=device)
+# ef_calc = nequip_calculator("SAVED_MODELS/nequip_ef_model.pth")
+ef_model = get_standard_ef_model(ave_neighbor_count=ave_neighbors, weight_path="SAVED_MODELS/ef_model_fe2o2.pth")
+sinf_model = get_standard_sinf_model(ave_neighbors, weight_path = "SAVED_MODELS/sinf_model_fe2o2.pth", device=device)
+full_sig_model = get_standard_full_sig_model(n_matsubara, ave_neighbors, weight_path = "SAVED_MODELS/full_sig_model_fe2o2.pth", radial_cutoff=4.0, device=device)
 
 
 
-random_plot_inds = np.random.randint(0, len(atoms), 6)
+random_plot_inds = np.random.choice(np.arange(0, len(atoms)), 6, replace=False)
 fig, axs = plt.subplots(2, 3)
 plot_count = 0
 
@@ -68,18 +69,21 @@ for i in tqdm(range(len(atoms)), desc="Generating self energies..."):
    newatom = atoms[i].copy()
    sinf_pred = sinf_model(all_data[i]).cpu().detach().numpy().flatten()
    sig_pred = full_sig_model(all_data[i]).cpu().detach().numpy()
-   sig_pred = fullatom_giw_from_gl(iws, sig_pred, fit_tail=True, fit_tail_cutoff=25, fit_tail_start=25, fit_tail_end=50)
+   sig_pred = fullatom_giw_from_gl(iws, sig_pred)
+   ef_pred = ef_model(all_data[i]).cpu().detach().item()
 
+   
 
    if i in random_plot_inds:
       atom = np.random.randint(0, sig_pred.shape[0])
       orbital = np.random.randint(0, sig_pred.shape[-1])
       axs[plot_count//3, plot_count%3].plot(iws, sig_pred[atom, :, orbital].real, c="red")
       axs[plot_count//3, plot_count%3].plot(iws, sig_pred[atom, :, orbital].imag, c="blue")
+      print(plot_count, ef_pred, sinf_pred)
       plot_count += 1
 
-   newatom.calc = ef_calc 
-   ef_pred = newatom.get_potential_energy()
+   # newatom.calc = ef_calc 
+   # ef_pred = newatom.get_potential_energy()
 
 
    sig_lines = get_sig_file_text(iws, sig_pred, sinf_pred, all_data[i])

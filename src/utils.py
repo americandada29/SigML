@@ -239,6 +239,7 @@ def train_test_split(dataset, train_percent=0.9, seed=None):
 def evaluate_sinf(model, dataset_org, display=True, img_save_dir = None, device="cpu"):
     dataset = copy.deepcopy(dataset_org)
     model.eval()
+    model.to(device)
 
     n_atoms = np.amax([dataset[i].sinf.shape[0] for i in range(len(dataset))])    
     n_orbitals = dataset[0].sinf.shape[1]
@@ -270,8 +271,8 @@ def evaluate_sinf(model, dataset_org, display=True, img_save_dir = None, device=
     
     for i in range(n_atoms):
         x = np.linspace(amin, amax, 1000)
-        axs[i].set_xlim(amin-0.2, amax+0.2)
-        axs[i].set_ylim(amin-0.2, amax+0.2)
+        axs[i].set_xlim(amin-0.5, amax+0.5)
+        axs[i].set_ylim(amin-0.5, amax+0.5)
         axs[i].plot(x, x, linestyle="--", c="black")
     if display:
         plt.show()
@@ -461,7 +462,7 @@ def evaluate_full_sig_legendre(model, dataset_org, orbital, atom=0, display=True
 def train_ef(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.1, device="cpu", batch_size=1):
     model.to(device)
 
-    train_data, val_data = train_test_split(dataset, train_percent= 1-val_percent)
+    train_data, val_data = train_test_split(dataset, train_percent= 1-val_percent, seed=53234)
 
     for step in range(max_iter):
 
