@@ -54,7 +54,7 @@ class Sinf_Model(Network):
 
 
 def get_standard_sinf_model(ave_neighbor_count, cutoff=4.0, weight_path=None, device="cpu"):
-    """
+    r"""
     Get a standard $\Sigma_{\infty}$ model
 
     Parameters

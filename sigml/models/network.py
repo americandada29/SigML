@@ -39,7 +39,8 @@ class CustomCompose(torch.nn.Module):
 
 
 class Network(torch.nn.Module):
-    r"""equivariant neural network
+    r"""Equivariant neural network class
+    
     Parameters
     ----------
     irreps_in : `e3nn.o3.Irreps` or None

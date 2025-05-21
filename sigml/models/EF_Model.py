@@ -49,7 +49,7 @@ class EF_Model(Network):
 
 
 def get_standard_ef_model(ave_neighbor_count, weight_path=None, cutoff=4.0, device="cpu"):
-    """
+    r"""
     Get a standard $E_f$ model
 
     Parameters
@@ -62,10 +62,10 @@ def get_standard_ef_model(ave_neighbor_count, weight_path=None, cutoff=4.0, devi
         The cutoff radius of the model
     device: str, optional, default = "cpu"
         The device to build the model on
-
+        
     Returns
     -------
-    model: EF_Model
+    model: `sigml.models.EF_Model.EF_Model`
         The standard $E_f$ model
     """
     out_dim = 1

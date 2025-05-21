@@ -51,44 +51,45 @@ def collate_to_list(batch_list):
 
 
 def parse_sig_file(sig_text, orbital="d"):
-  """
-  Parses the sig file text from EDMFTF and returns the mastsubara frequencies, the self energy data, and the self energy data at infinite frequency
+    r"""
+    Parses the sig file text from EDMFTF and returns the matsubara frequencies, the self energy data, and the self energy data at infinite frequency
 
-  Parameters 
-  ----------
+    Parameters 
+    ----------
     sig_text: str
-      The text from the sig file
+        The text from the sig file
     orbital: str, default = "d"
-      The orbital to parse, either "d" or "f"
-  Returns
-  -------
-    iws: np.ndarray
-      The matsubara frequencies (upper half of complex plane)
-    sig_data: np.ndarray
-      The self energy data 
-    sinfs: np.ndarray
-      The self energy data at infinite frequency
-  """
-  if orbital == "d":
-    num_orbitals = 5
-  elif orbital == "f":
-    num_orbitals = 7
-  else:
-    raise Exception("Orbital specified not supported, use either d or f")
+        The orbital to parse, either "d" or "f"
 
-  sig_lines = sig_text.split("\n")
-  s_infs = np.array([float(x) for x in sig_lines[0].split("[")[1].split("]")[0].split(",")], dtype=np.float64)
-  data = np.loadtxt(sig_lines[2:])
-  iws = data[:,0]
-  sig_data = data[:, 1:]
-  num_atoms = int(sig_data.shape[1]/(2*num_orbitals))
-  adjusted_sig_data = np.zeros((num_atoms, num_orbitals, sig_data.shape[0]), dtype=np.complex128)
-  adjusted_sinfs = np.zeros((num_atoms, num_orbitals))
-  for i in range(num_atoms):
-    adjusted_sinfs[i] = s_infs[i*num_orbitals:(i+1)*num_orbitals]
-    for j in range(num_orbitals):
-      adjusted_sig_data[i,j] = sig_data[:,2*num_orbitals*i + 2*j] + 1j*sig_data[:,2*num_orbitals*i+2*j+1]
-  return iws, adjusted_sig_data, adjusted_sinfs
+    Returns
+    -------
+    iws: np.ndarray
+        The matsubara frequencies (upper half of complex plane)
+    sig_data: np.ndarray
+        The self energy data 
+    sinfs: np.ndarray
+        The self energy data at infinite frequency
+    """
+    if orbital == "d":
+        num_orbitals = 5
+    elif orbital == "f":
+        num_orbitals = 7
+    else:
+        raise Exception("Orbital specified not supported, use either d or f")
+
+    sig_lines = sig_text.split("\n")
+    s_infs = np.array([float(x) for x in sig_lines[0].split("[")[1].split("]")[0].split(",")], dtype=np.float64)
+    data = np.loadtxt(sig_lines[2:])
+    iws = data[:,0]
+    sig_data = data[:, 1:]
+    num_atoms = int(sig_data.shape[1]/(2*num_orbitals))
+    adjusted_sig_data = np.zeros((num_atoms, num_orbitals, sig_data.shape[0]), dtype=np.complex128)
+    adjusted_sinfs = np.zeros((num_atoms, num_orbitals))
+    for i in range(num_atoms):
+        adjusted_sinfs[i] = s_infs[i*num_orbitals:(i+1)*num_orbitals]
+        for j in range(num_orbitals):
+            adjusted_sig_data[i,j] = sig_data[:,2*num_orbitals*i + 2*j] + 1j*sig_data[:,2*num_orbitals*i+2*j+1]
+    return iws, adjusted_sig_data, adjusted_sinfs
 
 
 ### Builds self energy matrix in vector form (atoms, N_matsubara*5)
@@ -206,7 +207,7 @@ def build_datapoint(atom, type_encoding, type_onehot, am_onehot, sig_text=None, 
 
 
 def get_average_neighbor_count(all_data):
-    """
+    r"""
     Gets the average number of neighbors for a given dataset
 
     Parameters 
@@ -256,7 +257,7 @@ def visualize_layers(model):
 
 
 def train_test_split(dataset, train_percent=0.9, seed=None):
-    """
+    r"""
     Splits a dataset into training and test sets
 
     Parameters 
@@ -294,7 +295,7 @@ def train_test_split(dataset, train_percent=0.9, seed=None):
 
 
 def evaluate_sinf(model, dataset_org, display=True, img_save_dir = None, device="cpu"):
-    """
+    r"""
     Evaluate the $\Sigma_{\infty}$ of model on a dataset 
 
     Parameters 
@@ -358,7 +359,7 @@ def evaluate_sinf(model, dataset_org, display=True, img_save_dir = None, device=
 
 
 def train_sinf(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.1, device="cpu", batch_size=1):
-    """
+    r"""
     Train the $\Sigma_{\infty}$ model on a dataset 
 
     Parameters 
@@ -432,7 +433,7 @@ def train_sinf(model, optimizer, dataset, loss_fn, scheduler, save_path = None, 
 
 
 def train_full_sig(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.1, device="cpu", batch_size=1):
-    """
+    r"""
     Train the $\Sigma(i\omega_n)$ model on a dataset 
 
     Parameters 
@@ -503,7 +504,7 @@ def train_full_sig(model, optimizer, dataset, loss_fn, scheduler, save_path = No
 
 
 def evaluate_full_sig(model, dataset_org, orbital, atom=1, display=True, img_save_dir = None):
-    """
+    r"""
     Evaluate the $\Sigma(i\omega_n)$ of model on a dataset. CAUTION: This function is depreciated. Use evaluate_full_sig_legendre instead.
 
     Parameters 
@@ -570,7 +571,7 @@ def evaluate_full_sig(model, dataset_org, orbital, atom=1, display=True, img_sav
 
 
 def evaluate_full_sig_legendre(model, dataset_org, orbital, atom=0, display=True, img_save_dir = None):
-    """
+    r"""
     Evaluate the $\Sigma(i\omega_n)$ of model on a dataset 
 
     Parameters 
@@ -643,7 +644,7 @@ def evaluate_full_sig_legendre(model, dataset_org, orbital, atom=0, display=True
 
 
 def train_ef(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.1, device="cpu", batch_size=1):
-    """
+    r"""
     Train the $E_f$ model on a dataset 
 
     Parameters 
@@ -718,7 +719,7 @@ def train_ef(model, optimizer, dataset, loss_fn, scheduler, save_path = None, ma
 
 
 def evaluate_ef(model, dataset_org):
-    """
+    r"""
     Evaluate the $E_f$ of model on a dataset 
 
     Parameters 
@@ -766,7 +767,7 @@ def assert_sig_conditions(sig_text):
 
 
 def build_data(atoms, sig_texts=None, efs=None, radial_cutoff=3.0, device="cpu"):
-    """
+    r"""
     Build a dataset from a list of atoms and optional self-energy text files and fermi energies
 
     Parameters 
@@ -814,7 +815,7 @@ def build_data(atoms, sig_texts=None, efs=None, radial_cutoff=3.0, device="cpu")
     
 
 def get_sig_file_text(iws, sig, sinf, U, J, nf):
-    """
+    r"""
     Generate sig.inp file text for input into EDMFTF
 
     Parameters 

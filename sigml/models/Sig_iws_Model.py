@@ -103,7 +103,7 @@ class CrystalSelfEnergyNetwork(torch.nn.Module):
     
     
 def get_standard_full_sig_model(leg_lmax, ave_neighbor_count, cutoff=4.0, weight_path=None, device="cpu"):
-    """
+    r"""
     Get a standard $\Sigma(i\omega)$ model
 
     Parameters
