@@ -1,7 +1,7 @@
-from EF_Model import get_standard_ef_model
-from Sinf_Model import get_standard_sinf_model
-from Sig_iws_Model import get_standard_full_sig_model
-from utils import build_data, get_average_neighbor_count, get_sig_file_text
+from sigml.models.EF_Model import get_standard_ef_model
+from sigml.models.Sinf_Model import get_standard_sinf_model
+from sigml.models.Sig_iws_Model import get_standard_full_sig_model
+from sigml.utils.utils import build_data, get_average_neighbor_count, get_sig_file_text
 import pickle 
 import os 
 import numpy as np
@@ -9,7 +9,7 @@ from io import StringIO
 from tqdm import tqdm
 from nequip.ase.nequip_calculator import nequip_calculator
 import torch
-from leg_lib import fullatom_giw_from_gl
+from sigml.utils.leg_lib import fullatom_giw_from_gl
 
 torch.set_default_dtype(torch.float32) 
 device = torch.device("cpu")
