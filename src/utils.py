@@ -115,7 +115,7 @@ def get_correlated_atoms_inds(atom, cor_atoms):
     return cor_atom_inds, eq_inds
 
 
-def build_datapoint(atom, type_encoding, type_onehot, am_onehot, sig_text=None, ef=None, r_max=3.0, device="cpu"):
+def build_datapoint(atom, type_encoding, type_onehot, am_onehot, sig_text=None, ef=None, r_max=4.0, device="cpu"):
     symbols = list(atom.get_chemical_symbols())
     cor_atoms = list(set([symbols[i] for i in range(len(atom.get_atomic_numbers())) if atom.get_atomic_numbers()[i] > 20]))
     positions = torch.as_tensor(atom.positions,  dtype=torch.float32, device=device)
@@ -354,9 +354,9 @@ def train_full_sig(model, optimizer, dataset, loss_fn, scheduler, save_path = No
             val_out = model(v)
             if batch_size == 1:
                 val_out = val_out.unsqueeze(0)
-            if vi == 0:
-                print(val_out)
-                print(v.sig)
+            # if vi == 0:
+            #     print(val_out)
+            #     print(v.sig)
             loss = loss_fn(val_out, v.sig)
             loss_val += loss.cpu().detach().item()
         print("Epoch", str(step),"Train Loss =", loss_cumulative/len(dataloader), "Val Loss =", loss_val/len(val_dataloader))
@@ -510,14 +510,20 @@ def evaluate_ef(model, dataset_org):
     
     preds = []
     acts = []
+    mae = 0
     for i in range(len(dataset)):
-        preds.append(model(dataset[i]).cpu().detach().item())
-        acts.append(dataset[i].ef[0].item())
+        pred = model(dataset[i]).cpu().detach().item()
+        act = dataset[i].ef[0].item()
+        mae += np.abs(pred - act)
+        preds.append(pred)
+        acts.append(act)
+    mae /= len(dataset)
     plt.scatter(preds, acts)
     x = np.linspace(np.amin(acts), np.amax(acts), 1000)
     plt.plot(x, x, linestyle="--", c="black")
     plt.xlim(np.amin(acts)-1 , np.amax(acts) + 1)
     plt.ylim(np.amin(acts)-1 , np.amax(acts) + 1)
+    plt.text(np.amin(acts), np.amax(acts), f"MAE: {mae:.5f}", fontsize=15)
     plt.show()
 
 
@@ -646,6 +652,7 @@ def train_nequip_ef(config_path, dataset):
     write("dmft_atoms_efs.extxyz", atoms, format='extxyz')
     os.system("rm -r results")
     os.system("python utils_nequip.py " + config_path + " " + str(len(atoms)))
+    os.system("rm dmft_atoms_efs.extxyz")
 
 
 def eval_nequip_ef(model_path, dataset, display=True, img_save_dir = None):
@@ -657,6 +664,7 @@ def eval_nequip_ef(model_path, dataset, display=True, img_save_dir = None):
     calc = nequip_calculator(model_path)
     pred_efs = []
     act_efs = []
+    mae = 0
     for d in tqdm(dataset, desc="Evalulating NequIP fermi energy predictions..."):
         cell = d.lattice[0].cpu().numpy()
         pos = d.pos.cpu().numpy()
@@ -665,6 +673,8 @@ def eval_nequip_ef(model_path, dataset, display=True, img_save_dir = None):
         tatom.calc = calc 
         pred_efs.append(tatom.get_potential_energy())
         act_efs.append(ef)
+        mae += np.abs(pred_efs[-1] - act_efs[-1])
+    mae /= len(dataset)
     plt.scatter(pred_efs, act_efs, c="red")
     plt.xlim(np.amin(act_efs)-3, np.amax(act_efs)+3)
     plt.ylim(np.amin(act_efs)-3, np.amax(act_efs)+3)
@@ -672,6 +682,7 @@ def eval_nequip_ef(model_path, dataset, display=True, img_save_dir = None):
     plt.plot(x, x, linestyle="--", c='black')
     plt.xlabel("E$_f$ Predictions (eV)")
     plt.ylabel("E$_f$ Actual (eV)")
+    plt.text(np.amin(act_efs), np.amax(act_efs), f"MAE: {mae:.5f}", fontsize=15)
     if display:
         plt.show()
     elif not(display) and img_save_dir is not None:

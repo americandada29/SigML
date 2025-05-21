@@ -45,16 +45,19 @@ n_matsubara = dataset[0].sig.shape[2]
 from ase.io import read
 import matplotlib.pyplot as plt
 
+##### IMPORTANT: Be sure to adjust the radial cutoff #####
+radial_cutoff = 5.0
+
 source_save_dir = "../DMFT_4_SIGML_LEG/"
 atoms = read(source_save_dir + "dmft_input_atoms.extxyz", index=":", format="extxyz")
-all_data = build_data(atoms)
+all_data = build_data(atoms, radial_cutoff=radial_cutoff)
 
 
 
 # ef_calc = nequip_calculator("SAVED_MODELS/nequip_ef_model.pth")
-ef_model = get_standard_ef_model(ave_neighbor_count=ave_neighbors, weight_path="SAVED_MODELS/ef_model_fe2o2.pth")
-sinf_model = get_standard_sinf_model(ave_neighbors, weight_path = "SAVED_MODELS/sinf_model_fe2o2.pth", device=device)
-full_sig_model = get_standard_full_sig_model(n_matsubara, ave_neighbors, weight_path = "SAVED_MODELS/full_sig_model_fe2o2.pth", radial_cutoff=4.0, device=device)
+ef_model = get_standard_ef_model(ave_neighbor_count=ave_neighbors, weight_path="SAVED_MODELS/ef_model_fe2o2.pth", cutoff=radial_cutoff, device=device)
+sinf_model = get_standard_sinf_model(ave_neighbors, weight_path = "SAVED_MODELS/sinf_model_fe2o2.pth", cutoff=radial_cutoff, device=device)
+full_sig_model = get_standard_full_sig_model(n_matsubara, ave_neighbors, weight_path = "SAVED_MODELS/full_sig_model_fe2o2.pth", radial_cutoff=radial_cutoff, device=device)
 
 
 

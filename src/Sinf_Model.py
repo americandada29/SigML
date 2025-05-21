@@ -47,7 +47,7 @@ class Sinf_Model(Network):
         return output
 
 
-def get_standard_sinf_model(ave_neighbor_count, weight_path=None, device="cpu"):
+def get_standard_sinf_model(ave_neighbor_count, cutoff=4.0, weight_path=None, device="cpu"):
     out_dim = 5
     em_dim = 16
     model = Sinf_Model(in_dim = 118,
@@ -58,8 +58,10 @@ def get_standard_sinf_model(ave_neighbor_count, weight_path=None, device="cpu"):
                             layers=2,
                             mul=32,
                             lmax=2,
-                            max_radius=4.0,
+                            max_radius=cutoff,
                             num_neighbors=ave_neighbor_count,
+                            radial_layers = 2,
+                            radial_neurons = 64,
                             reduce_output=False).to(device)
     if weight_path is not None:
         model.load_state_dict(torch.load(weight_path))

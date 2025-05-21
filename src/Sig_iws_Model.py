@@ -95,7 +95,7 @@ class CrystalSelfEnergyNetwork(torch.nn.Module):
 
 def get_standard_full_sig_model(n_matsubara, ave_neighbor_count, radial_cutoff=3.0, weight_path=None, device="cpu"):
     out_dim = n_matsubara
-    em_dim = 32
+    em_dim = 64
     model = CrystalSelfEnergyNetwork(in_dim=118,
                             em_dim=em_dim,
                             out_dim=out_dim,

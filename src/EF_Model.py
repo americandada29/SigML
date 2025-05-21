@@ -42,7 +42,7 @@ class EF_Model(Network):
         return output
 
 
-def get_standard_ef_model(ave_neighbor_count, weight_path=None):
+def get_standard_ef_model(ave_neighbor_count, weight_path=None, cutoff=4.0, device="cpu"):
     out_dim = 1
     em_dim = 32
     model = EF_Model(in_dim = 118,
@@ -53,9 +53,9 @@ def get_standard_ef_model(ave_neighbor_count, weight_path=None):
                     layers=2,
                     mul=16,
                     lmax=2,
-                    max_radius=4.0,
+                    max_radius=cutoff,
                     num_neighbors=ave_neighbor_count,
-                    reduce_output=True)
+                    reduce_output=True).to(device)
     if weight_path is not None:
         model.load_state_dict(torch.load(weight_path))
     return model
