@@ -49,7 +49,7 @@ class EF_Model(Network):
 
 
 def get_standard_ef_model(ave_neighbor_count, weight_path=None, cutoff=4.0, device="cpu"):
-    r"""
+    """
     Get a standard $E_f$ model
 
     Parameters
