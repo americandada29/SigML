@@ -1,0 +1,18 @@
+[build-system]
+requires = ["setuptools >= 77.0.3"]
+build-backend = "setuptools.build_meta"
+[project]
+name = "SigML"
+version = "0.1.0"
+description = "Package to learn the DMFT self-energy and fermi level directly from EDMFTF calculations"
+authors = [
+  { name="Rishi Rao", email="rvr35@rutgers.edu" }
+]
+readme = "README.md"
+license = { file = "LICENSE" }
+dependencies = [
+  "numpy",  # example dependency
+]
+
+[project.urls]
+Homepage = "https://github.com/americandada29/SigML/"

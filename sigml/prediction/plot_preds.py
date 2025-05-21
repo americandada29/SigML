@@ -1,7 +1,7 @@
 import matplotlib.pyplot as plt
 import pickle
 import numpy as np
-from utils import build_data, plot_predictions
+from sigml.utils.utils import build_data, plot_predictions
 
 with open("dmft_input_atoms_sigs_efs.pkl","rb") as f:
     atoms, sig_texts_lines, efs = pickle.load(f)

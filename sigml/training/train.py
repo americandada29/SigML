@@ -1,10 +1,7 @@
-from EF_Model import get_standard_ef_model
-from Sinf_Model import get_standard_sinf_model
-from Sig_iws_Model import get_standard_full_sig_model
-from utils import build_data, get_average_neighbor_count, get_sig_file_text, \
-                  train_test_split, train_full_sig, evaluate_full_sig, train_nequip_ef, \
-                  eval_nequip_ef, train_sinf, evaluate_sinf, evaluate_full_sig_legendre, \
-                  train_ef, evaluate_ef
+from sigml.models.EF_Model import get_standard_ef_model
+from sigml.models.Sinf_Model import get_standard_sinf_model
+from sigml.models.Sig_iws_Model import get_standard_full_sig_model
+from sigml.utils.utils import *
 import pickle 
 import os 
 import numpy as np

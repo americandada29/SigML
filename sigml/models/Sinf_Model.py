@@ -4,7 +4,7 @@ import torch.nn as nn
 import torch.nn.functional as F
 import torch_geometric as tg
 import copy
-from network import Network
+from sigml.models.network import Network
 
 
 
