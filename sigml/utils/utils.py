@@ -10,6 +10,7 @@ from tqdm import tqdm
 from nequip.ase.nequip_calculator import nequip_calculator
 # from torch_geometric.loader import DataLoader
 from torch.utils.data import DataLoader
+from sigml.utils.leg_lib import fullatom_gl_from_giw, fullatom_giw_from_gl
 
 # crystal structure data
 from ase import Atom, Atoms
@@ -22,20 +23,27 @@ from pymatgen.symmetry.analyzer import SpacegroupAnalyzer as SPA
 
 # data pre-processing and visualization
 import numpy as np
-import matplotlib as mpl
 import matplotlib.pyplot as plt
-from mpl_toolkits.axes_grid1.inset_locator import inset_axes
-import pickle 
 import copy
-import io
 import os
-from leg_lib import fullatom_gl_from_giw, fullatom_giw_from_gl, giwfromgl
-### Import models so that it doesn't complain
-# from Sig_iws_Model import CrystalSelfEnergyNetwork
-# from EF_Model import EF_Model
-# from Sinf_Model import Sinf_Model
 
 
+"""
+utils.py
+
+This file contains the utility functions for processing data, training and evaluating models, and visualizing results.
+- parse_sig_file: Parse the sig file text from EDMFTF and return the matsubara frequencies, the self energy data, and the self energy data at infinite frequency
+- get_average_neighbor_count: Get the average number of neighbors for a given dataset
+- evaluate_sinf: Evaluate the $\Sigma_{\infty}$ model on a dataset
+- train_sinf: Train the $\Sigma_{\infty}$ model on a dataset
+- train_full_sig: Train the $\Sigma(i\omega)$ model on a dataset
+- evaluate_full_sig: Evaluate the $\Sigma(i\omega)$ model on a dataset
+- evaluate_full_sig_legendre: Evaluate the $\Sigma(i\omega)$ model on a dataset using the Legendre expansion
+- train_ef: Train the $E_f$ model on a dataset
+- evaluate_ef: Evaluate the $E_f$ model on a dataset
+- build_data: Build a dataset from a list of atoms, self energy text files, and fermi energies
+- get_sig_file_text: Get the sig file text from a list of matsubara frequencies, self energy data, and self energy data at infinite frequency
+"""
 
 
 def collate_to_list(batch_list):
@@ -43,6 +51,24 @@ def collate_to_list(batch_list):
 
 
 def parse_sig_file(sig_text, orbital="d"):
+  """
+  Parses the sig file text from EDMFTF and returns the mastsubara frequencies, the self energy data, and the self energy data at infinite frequency
+
+  Parameters 
+  ----------
+    sig_text: str
+      The text from the sig file
+    orbital: str, default = "d"
+      The orbital to parse, either "d" or "f"
+  Returns
+  -------
+    iws: np.ndarray
+      The matsubara frequencies (upper half of complex plane)
+    sig_data: np.ndarray
+      The self energy data 
+    sinfs: np.ndarray
+      The self energy data at infinite frequency
+  """
   if orbital == "d":
     num_orbitals = 5
   elif orbital == "f":
@@ -180,6 +206,18 @@ def build_datapoint(atom, type_encoding, type_onehot, am_onehot, sig_text=None, 
 
 
 def get_average_neighbor_count(all_data):
+    """
+    Gets the average number of neighbors for a given dataset
+
+    Parameters 
+    ----------
+      all_data: list
+        A list of tg.data.Data objects
+    Returns
+    ----------
+      avg_neighbor_count: float
+        The average number of neighbors for the dataset
+    """
     neighbor_count = []
     for adata in all_data:
         N = adata.pos.shape[0]
@@ -218,6 +256,25 @@ def visualize_layers(model):
 
 
 def train_test_split(dataset, train_percent=0.9, seed=None):
+    """
+    Splits a dataset into training and test sets
+
+    Parameters 
+    ----------
+      dataset: list
+        A list of tg.data.Data objects
+      train_percent: float, default = 0.9
+        The percentage of the dataset to use for training
+      seed: int, default = None
+        The seed to use for the random number generator
+
+    Returns
+    ----------
+      train_data: list
+        The training data
+      test_data: list
+        The test data
+    """
     rng = None
     if seed is not None:
         rng = np.random.default_rng(seed=seed)
@@ -237,6 +294,26 @@ def train_test_split(dataset, train_percent=0.9, seed=None):
 
 
 def evaluate_sinf(model, dataset_org, display=True, img_save_dir = None, device="cpu"):
+    """
+    Evaluate the $\Sigma_{\infty}$ of model on a dataset 
+
+    Parameters 
+    ----------
+      model: sigml.models.Sinf_Model.Sinf_Model
+        The $\Sigma_{\infty}$ model to evaluate 
+      dataset_org: list of tg.data.Data objects
+        The dataset to evaluate the $\Sigma_{\infty}$ on
+      display: bool, default = True
+        Whether or not to display the plot. If false, img_save_dir must be provided
+      img_save_dir: str, default = None
+        The directory to save the plot if not displayed 
+      device: str, default = "cpu"
+        The device to evaluate the model on
+    
+    Returns
+    -------
+      None
+    """
     dataset = copy.deepcopy(dataset_org)
     model.eval()
     model.to(device)
@@ -281,6 +358,34 @@ def evaluate_sinf(model, dataset_org, display=True, img_save_dir = None, device=
 
 
 def train_sinf(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.1, device="cpu", batch_size=1):
+    """
+    Train the $\Sigma_{\infty}$ model on a dataset 
+
+    Parameters 
+    ----------
+      model: sigml.models.Sinf_Model.Sinf_Model
+        The $\Sigma_{\infty}$ model to evaluate 
+      optimizer: torch.optim.Optimizer
+        The optimizer to use for training
+      dataset: list of tg.data.Data objects
+        The dataset to train the $\Sigma_{\infty}$ on
+      loss_fn: torch.nn.Module
+        The loss function to use for training
+      scheduler: torch.optim.lr_scheduler
+        The scheduler to use for training
+      save_path: str, default = None
+        The path to save the model. If None, the model will not be saved in a directory
+      max_iter: int, default = 101
+        The maximum number of iterations to train for
+      val_percent: float, default = 0.1
+        The percentage of the dataset to use for validation, expressed as a fraction of the total dataset
+      device: str, default = "cpu"
+        The device to train the model on
+    
+    Returns
+    -------
+      None
+    """
     model.to(device)
 
     train_data, val_data = train_test_split(dataset, train_percent= 1-val_percent, seed=53234)
@@ -327,6 +432,36 @@ def train_sinf(model, optimizer, dataset, loss_fn, scheduler, save_path = None, 
 
 
 def train_full_sig(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.1, device="cpu", batch_size=1):
+    """
+    Train the $\Sigma(i\omega_n)$ model on a dataset 
+
+    Parameters 
+    ----------
+      model: sigml.models.Sig_iws_Model.Sig_iws_Model
+        The $\Sigma(i\omega_n)$ model to evaluate 
+      optimizer: torch.optim.Optimizer
+        The optimizer to use for training
+      dataset: list of tg.data.Data objects
+        The dataset to train the $\Sigma(i\omega_n)$ on
+      loss_fn: torch.nn.Module
+        The loss function to use for training
+      scheduler: torch.optim.lr_scheduler
+        The scheduler to use for training
+      save_path: str, default = None
+        The path to save the model. If None, the model will not be saved in a directory
+      max_iter: int, default = 101
+        The maximum number of iterations to train for
+      val_percent: float, default = 0.1
+        The percentage of the dataset to use for validation, expressed as a fraction of the total dataset
+      device: str, default = "cpu"
+        The device to train the model on
+      batch_size: int, default = 1
+        The batch size to use for training. Currently, only a batch size of 1 is supported
+    
+    Returns
+    -------
+      None
+    """
     model.to(device)
     train_data, val_data = train_test_split(dataset, train_percent= 1-val_percent, seed=53234)
     for step in range(max_iter):
@@ -368,6 +503,30 @@ def train_full_sig(model, optimizer, dataset, loss_fn, scheduler, save_path = No
 
 
 def evaluate_full_sig(model, dataset_org, orbital, atom=1, display=True, img_save_dir = None):
+    """
+    Evaluate the $\Sigma(i\omega_n)$ of model on a dataset. CAUTION: This function is depreciated. Use evaluate_full_sig_legendre instead.
+
+    Parameters 
+    ----------
+      model: sigml.models.Sig_iws_Model.Sig_iws_Model
+        The $\Sigma(i\omega_n)$ model to evaluate 
+      dataset_org: list of tg.data.Data objects
+        The dataset to evaluate the $\Sigma(i\omega_n)$ on
+      orbital: int, default = 0
+        The orbital to evaluate the $\Sigma(i\omega_n)$ on
+      atom: int, default = 0
+        The atom number to evaluate the $\Sigma(i\omega_n)$ on. The atom number must match a unique correlated atom, symmetrically equivalent atoms are not considered
+      display: bool, default = True
+        Whether or not to display the plot. If false, img_save_dir must be provided
+      img_save_dir: str, default = None
+        The directory to save the plot if not displayed 
+      device: str, default = "cpu"
+        The device to evaluate the model on
+    
+    Returns
+    -------
+      None
+    """
     dataset = copy.deepcopy(dataset_org)
     model.eval()
     iws = dataset[0].iws.detach().cpu().numpy()
@@ -411,6 +570,30 @@ def evaluate_full_sig(model, dataset_org, orbital, atom=1, display=True, img_sav
 
 
 def evaluate_full_sig_legendre(model, dataset_org, orbital, atom=0, display=True, img_save_dir = None):
+    """
+    Evaluate the $\Sigma(i\omega_n)$ of model on a dataset 
+
+    Parameters 
+    ----------
+      model: sigml.models.Sig_iws_Model.Sig_iws_Model
+        The $\Sigma(i\omega_n)$ model to evaluate 
+      dataset_org: list of tg.data.Data objects
+        The dataset to evaluate the $\Sigma(i\omega_n)$ on
+      orbital: int, default = 0
+        The orbital to evaluate the $\Sigma(i\omega_n)$ on
+      atom: int, default = 0
+        The atom number to evaluate the $\Sigma(i\omega_n)$ on. The atom number must match a unique correlated atom, symmetrically equivalent atoms are not considered
+      display: bool, default = True
+        Whether or not to display the plot. If false, img_save_dir must be provided
+      img_save_dir: str, default = None
+        The directory to save the plot if not displayed 
+      device: str, default = "cpu"
+        The device to evaluate the model on
+    
+    Returns
+    -------
+      None
+    """
     dataset = copy.deepcopy(dataset_org)
     model.eval()
     iws = dataset[0].iws.detach().cpu().numpy()[0]
@@ -460,6 +643,36 @@ def evaluate_full_sig_legendre(model, dataset_org, orbital, atom=0, display=True
 
 
 def train_ef(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.1, device="cpu", batch_size=1):
+    """
+    Train the $E_f$ model on a dataset 
+
+    Parameters 
+    ----------
+      model: sigml.models.Ef_Model.Ef_Model
+        The $E_f$ model to evaluate 
+      optimizer: torch.optim.Optimizer
+        The optimizer to use for training
+      dataset: list of tg.data.Data objects
+        The dataset to train the $E_f$ on
+      loss_fn: torch.nn.Module
+        The loss function to use for training
+      scheduler: torch.optim.lr_scheduler
+        The scheduler to use for training
+      save_path: str, default = None
+        The path to save the model. If None, the model will not be saved in a directory
+      max_iter: int, default = 101
+        The maximum number of iterations to train for
+      val_percent: float, default = 0.1
+        The percentage of the dataset to use for validation, expressed as a fraction of the total dataset
+      device: str, default = "cpu"
+        The device to train the model on
+      batch_size: int, default = 1
+        The batch size to use for training. Currently, only a batch size of 1 is supported
+
+    Returns
+    -------
+      None
+    """
     model.to(device)
 
     train_data, val_data = train_test_split(dataset, train_percent= 1-val_percent, seed=53234)
@@ -505,6 +718,20 @@ def train_ef(model, optimizer, dataset, loss_fn, scheduler, save_path = None, ma
 
 
 def evaluate_ef(model, dataset_org):
+    """
+    Evaluate the $E_f$ of model on a dataset 
+
+    Parameters 
+    ----------
+      model: sigml.models.Ef_Model.Ef_Model
+        The $E_f$ model to evaluate 
+      dataset_org: list of tg.data.Data objects
+        The dataset to evaluate the $E_f$ on
+    
+    Returns
+    -------
+      None
+    """
     dataset = copy.deepcopy(dataset_org)
     model.eval()
     
@@ -539,6 +766,27 @@ def assert_sig_conditions(sig_text):
 
 
 def build_data(atoms, sig_texts=None, efs=None, radial_cutoff=3.0, device="cpu"):
+    """
+    Build a dataset from a list of atoms and optional self-energy text files and fermi energies
+
+    Parameters 
+    ----------
+      atoms: list of tg.data.Data objects
+        The atoms to build the dataset from
+      sig_texts: list of str, optional, default = None
+        The self-energy text files to build the dataset from
+      efs: list of float, optional, default = None
+        The fermi energies to build the dataset from
+      radial_cutoff: float, default = 3.0
+        The radial cutoff to build the dataset from
+      device: str, default = "cpu"
+        The device to build the dataset on
+    
+    Returns
+    -------
+      dataset: list of tg.data.Data objects
+        The dataset built from the atoms, self-energy text files, and fermi energies
+    """
     type_encoding = {}
     species_am = []
     for Z in range(1, 119):
@@ -565,19 +813,44 @@ def build_data(atoms, sig_texts=None, efs=None, radial_cutoff=3.0, device="cpu")
     return all_data
     
 
-def get_sig_file_text(iws, sig, sinf, data):
+def get_sig_file_text(iws, sig, sinf, U, J, nf):
+    """
+    Generate sig.inp file text for input into EDMFTF
+
+    Parameters 
+    ----------
+      iws: np.ndarray
+        Matsubara frequencies over which $\Sigma$ is defined
+      sig: np.ndarray of shape (N_inequivalent_atoms, N_matsubara, N_orbitals)
+        The complex valued self-energy 
+      sinf: np.ndarray of shape (N_inequivalent_atoms*N_orbitals)
+        Self-energy at infinite frequency 
+      U: float
+        The columb interaction strength in eV to be used in the DMFT calculation
+      J: float
+        The Hund's coupling in eV to be used in the DMFT calculation
+      nf: float
+        The nominal occupancy of the correlated sites
+    
+    Returns
+    -------
+      lines: list of strings
+        A list of all the relevant lines needed to construct the sig.inp text file
+    """
     # header1 = "# s_oo= [25.94191367094248, 25.97927152427038, 26.05945867814713, 26.06381971479536, 26.03294235710237, 26.04283272307152, 25.96716318919691, 26.0122262627843, 25.98858687107719, 26.0708059030178, 26.04368953407744, 26.0672438591148, 26.14826552518523, 26.14590929289391, 26.12531807149132, 25.96790067151829, 25.96873105519074, 25.97613803667094, 25.95033170658937, 25.97092521181814]\n"
     header1 = "# s_oo= [" + ', '.join(f'{x:.14f}' for x in sinf) + "]\n"
-    header2 = "# Edc= [52.5, 52.5, 52.5, 52.5, 52.5, 52.5, 52.5, 52.5, 52.5, 52.5]\n"
+    # header2 = "# Edc= [52.5, 52.5, 52.5, 52.5, 52.5, 52.5, 52.5, 52.5, 52.5, 52.5]\n"
+    Edc = U*(nf - 0.5) - 0.5*J*(nf-1.0)
+    header2 = " Edc= [" + ', '.join(f'{Edc}' for _ in range(len(sinf))) + "]\n"
 
 
-    valid_indices = []
-    for i in range(len(data.eq_inds)):
-        first_idx = data.eq_inds[i][0]
-        if first_idx in data.cor_atom_inds:
-            valid_indices.append(first_idx.numpy())
-    valid_indices = np.array(valid_indices)
-    sig = sig[valid_indices]
+    # valid_indices = []
+    # for i in range(len(data.eq_inds)):
+    #     first_idx = data.eq_inds[i][0]
+    #     if first_idx in data.cor_atom_inds:
+    #         valid_indices.append(first_idx.numpy())
+    # valid_indices = np.array(valid_indices)
+    # sig = sig[valid_indices]
 
     outdata = np.zeros((sig.shape[1], 1 + 2*sig.shape[0]*sig.shape[2]))
     outdata[:,0] = iws 

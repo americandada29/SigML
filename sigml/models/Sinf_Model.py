@@ -6,7 +6,13 @@ import torch_geometric as tg
 import copy
 from sigml.models.network import Network
 
+"""
+Sinf_Model.py
 
+This file contains the definition of the Sinf_Model class, which is a PyTorch model for predicting the self energy at infinite frequency of a material.
+- Sinf_Model: The Sinf_Model class, which is a PyTorch model for predicting the self energy at infinite frequency of a material.
+- get_standard_sinf_model: Get a standard $\Sigma_{\infty}$ model
+"""
 
 class Sinf_Model(Network):
     def __init__(self, in_dim, em_dim, **kwargs):            
@@ -48,6 +54,25 @@ class Sinf_Model(Network):
 
 
 def get_standard_sinf_model(ave_neighbor_count, cutoff=4.0, weight_path=None, device="cpu"):
+    """
+    Get a standard $\Sigma_{\infty}$ model
+
+    Parameters
+    ----------
+    ave_neighbor_count: int
+        The average number of neighbors per atom
+    cutoff: float, optional, default = 4.0
+        The cutoff radius of the model
+    weight_path: str, optional, default = None
+        The path to the weights of the model if model has been previously trained and saved
+    device: str, optional, default = "cpu"
+        The device to build the model on
+
+    Returns
+    -------
+    model: Sinf_Model
+        The standard $\Sigma_{\infty}$ model
+    """
     out_dim = 5
     em_dim = 16
     model = Sinf_Model(in_dim = 118,

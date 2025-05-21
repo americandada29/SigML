@@ -8,6 +8,14 @@ from sigml.models.network import Network
 from torch_geometric.data import Batch
 
 
+"""
+Sig_iws_Model.py
+
+This file contains the definition of the CrystalSelfEnergyNetwork class, which is a PyTorch model for predicting the self energy of a material.
+- CrystalSelfEnergyNetwork: The CrystalSelfEnergyNetwork class, which is a PyTorch model for predicting the self energy of a material.
+- get_standard_full_sig_model: Get a standard $\Sigma(i\omega)$ model
+"""
+
 class PeriodicNetwork(Network):
     def __init__(self, in_dim, em_dim, **kwargs):            
         # override the `reduce_output` keyword to instead perform an averge over atom contributions    
@@ -61,6 +69,7 @@ class PeriodicNetwork(Network):
         
         return output
 
+
 class CrystalSelfEnergyNetwork(torch.nn.Module):
     def __init__(self, in_dim, em_dim, out_dim, radial_cutoff, neighbor_count, orbital_count, layers, mul, lmax, **kwargs) -> None:
         super().__init__()
@@ -92,9 +101,30 @@ class CrystalSelfEnergyNetwork(torch.nn.Module):
         output = torch.stack(outputs, dim=-1)
         return output
     
+    
+def get_standard_full_sig_model(leg_lmax, ave_neighbor_count, cutoff=4.0, weight_path=None, device="cpu"):
+    """
+    Get a standard $\Sigma(i\omega)$ model
 
-def get_standard_full_sig_model(n_matsubara, ave_neighbor_count, radial_cutoff=3.0, weight_path=None, device="cpu"):
-    out_dim = n_matsubara
+    Parameters
+    ----------
+    leg_lmax: int
+        The maximum angular momentum number $l_max$ used for the Legendre expansion
+    ave_neighbor_count: int
+        The average number of neighbors per atom
+    cutoff: float, optional, default = 4.0
+        The cutoff radius of the model
+    weight_path: str, optional, default = None
+        The path to the weights of the model if model has been previously trained and saved
+    device: str, optional, default = "cpu"
+        The device to build the model on
+
+    Returns
+    -------
+    model: CrystalSelfEnergyNetwork
+        The standard $\Sigma(i\omega)$ model
+    """
+    out_dim = leg_lmax
     em_dim = 64
     model = CrystalSelfEnergyNetwork(in_dim=118,
                             em_dim=em_dim,
@@ -103,7 +133,7 @@ def get_standard_full_sig_model(n_matsubara, ave_neighbor_count, radial_cutoff=3
                             mul=64,
                             lmax=2,
                             orbital_count=5,
-                            radial_cutoff=radial_cutoff,
+                            radial_cutoff=cutoff,
                             neighbor_count=ave_neighbor_count,
                             radial_layers = 2,
                             radial_neurons = 64).to(device)

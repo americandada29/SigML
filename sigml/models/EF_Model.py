@@ -6,7 +6,13 @@ import torch_geometric as tg
 import copy
 from sigml.models.network import Network
 
+"""
+EF_Model.py
 
+This file contains the definition of the EF_Model class, which is a PyTorch model for predicting the fermi energy of a material.
+- EF_Model: The EF_Model class, which is a PyTorch model for predicting the fermi energy of a material.
+- get_standard_ef_model: Get a standard $E_f$ model
+"""
 
 class EF_Model(Network):
     def __init__(self, in_dim, em_dim, **kwargs):            
@@ -43,6 +49,25 @@ class EF_Model(Network):
 
 
 def get_standard_ef_model(ave_neighbor_count, weight_path=None, cutoff=4.0, device="cpu"):
+    """
+    Get a standard $E_f$ model
+
+    Parameters
+    ----------
+    ave_neighbor_count: int
+        The average number of neighbors per atom
+    weight_path: str, optional, default = None
+        The path to the weights of the model if model has been previously trained and saved
+    cutoff: float, optional, default = 4.0
+        The cutoff radius of the model
+    device: str, optional, default = "cpu"
+        The device to build the model on
+
+    Returns
+    -------
+    model: EF_Model
+        The standard $E_f$ model
+    """
     out_dim = 1
     em_dim = 32
     model = EF_Model(in_dim = 118,
