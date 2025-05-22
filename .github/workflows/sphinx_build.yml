@@ -35,12 +35,20 @@ jobs:
         run: |
           sphinx-build -b html docs/source docs/
 
-      - name: Deploy pages
-        uses: peaceiris/actions-gh-pages@v4
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v4
         with:
-          publish_branch: main
-          github_token: ${{ secrets.GITHUB_TOKEN}}
-          publish_dir: docs/
-          force_orphan: true
+          path: docs/
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
+
           
 
