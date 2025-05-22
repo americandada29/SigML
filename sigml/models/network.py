@@ -177,15 +177,22 @@ class Network(torch.nn.Module):
         return batch, edge_src, edge_dst, edge_vec
 
     def forward(self, data: Union[Data, Dict[str, torch.Tensor]]) -> torch.Tensor:
-        """evaluate the network
+        r"""
+        Evaluate the network
+
         Parameters
         ----------
         data : `torch_geometric.data.Data` or dict
-            data object containing
-            - ``pos`` the position of the nodes (atoms)
-            - ``x`` the input features of the nodes, optional
-            - ``z`` the attributes of the nodes, for instance the atom type, optional
-            - ``batch`` the graph to which the node belong, optional
+        data object containing
+        - ``pos`` the position of the nodes (atoms)
+        - ``x`` the input features of the nodes, optional
+        - ``z`` the attributes of the nodes, for instance the atom type, optional
+        - ``batch`` the graph to which the node belong, optional
+
+        Returns
+        -------
+        x: torch.Tensor
+            The output features of the nodes
         """
         batch, edge_src, edge_dst, edge_vec = self.preprocess(data)
         edge_sh = o3.spherical_harmonics(self.irreps_edge_attr, edge_vec, True, normalization='component')

@@ -296,14 +296,14 @@ def train_test_split(dataset, train_percent=0.9, seed=None):
 
 def evaluate_sinf(model, dataset_org, display=True, img_save_dir = None, device="cpu"):
     r"""
-    Evaluate the $\Sigma_{\infty}$ of model on a dataset 
+    Evaluate the :math:`\Sigma_{\infty}` of model on a dataset 
 
     Parameters 
     ----------
       model: sigml.models.Sinf_Model.Sinf_Model
-        The $\Sigma_{\infty}$ model to evaluate 
+        The :math:`\Sigma_{\infty}` model to evaluate 
       dataset_org: list of tg.data.Data objects
-        The dataset to evaluate the $\Sigma_{\infty}$ on
+        The dataset to evaluate the :math:`\Sigma_{\infty}` on
       display: bool, default = True
         Whether or not to display the plot. If false, img_save_dir must be provided
       img_save_dir: str, default = None
@@ -360,16 +360,16 @@ def evaluate_sinf(model, dataset_org, display=True, img_save_dir = None, device=
 
 def train_sinf(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.1, device="cpu", batch_size=1):
     r"""
-    Train the $\Sigma_{\infty}$ model on a dataset 
+    Train the :math:`\Sigma_{\infty}` model on a dataset 
 
     Parameters 
     ----------
       model: sigml.models.Sinf_Model.Sinf_Model
-        The $\Sigma_{\infty}$ model to evaluate 
+        The :math:`\Sigma_{\infty}` model to evaluate 
       optimizer: torch.optim.Optimizer
         The optimizer to use for training
       dataset: list of tg.data.Data objects
-        The dataset to train the $\Sigma_{\infty}$ on
+        The dataset to train the :math:`\Sigma_{\infty}` on
       loss_fn: torch.nn.Module
         The loss function to use for training
       scheduler: torch.optim.lr_scheduler
@@ -434,16 +434,16 @@ def train_sinf(model, optimizer, dataset, loss_fn, scheduler, save_path = None, 
 
 def train_full_sig(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.1, device="cpu", batch_size=1):
     r"""
-    Train the $\Sigma(i\omega_n)$ model on a dataset 
+    Train the :math:`\Sigma(i\omega_n)` model on a dataset 
 
     Parameters 
     ----------
       model: sigml.models.Sig_iws_Model.Sig_iws_Model
-        The $\Sigma(i\omega_n)$ model to evaluate 
+        The :math:`\Sigma(i\omega_n)` model to evaluate 
       optimizer: torch.optim.Optimizer
         The optimizer to use for training
       dataset: list of tg.data.Data objects
-        The dataset to train the $\Sigma(i\omega_n)$ on
+        The dataset to train the :math:`\Sigma(i\omega_n)` on
       loss_fn: torch.nn.Module
         The loss function to use for training
       scheduler: torch.optim.lr_scheduler
@@ -505,18 +505,18 @@ def train_full_sig(model, optimizer, dataset, loss_fn, scheduler, save_path = No
 
 def evaluate_full_sig(model, dataset_org, orbital, atom=1, display=True, img_save_dir = None):
     r"""
-    Evaluate the $\Sigma(i\omega_n)$ of model on a dataset. CAUTION: This function is depreciated. Use evaluate_full_sig_legendre instead.
+    Evaluate the :math:`\Sigma(i\omega_n)` of model on a dataset. CAUTION: This function is depreciated. Use evaluate_full_sig_legendre instead.
 
     Parameters 
     ----------
       model: sigml.models.Sig_iws_Model.Sig_iws_Model
-        The $\Sigma(i\omega_n)$ model to evaluate 
+        The :math:`\Sigma(i\omega_n)` model to evaluate 
       dataset_org: list of tg.data.Data objects
-        The dataset to evaluate the $\Sigma(i\omega_n)$ on
+        The dataset to evaluate the :math:`\Sigma(i\omega_n)` on
       orbital: int, default = 0
-        The orbital to evaluate the $\Sigma(i\omega_n)$ on
+        The orbital to evaluate the :math:`\Sigma(i\omega_n)` on
       atom: int, default = 0
-        The atom number to evaluate the $\Sigma(i\omega_n)$ on. The atom number must match a unique correlated atom, symmetrically equivalent atoms are not considered
+        The atom number to evaluate the :math:`\Sigma(i\omega_n)` on. The atom number must match a unique correlated atom, symmetrically equivalent atoms are not considered
       display: bool, default = True
         Whether or not to display the plot. If false, img_save_dir must be provided
       img_save_dir: str, default = None
@@ -572,24 +572,24 @@ def evaluate_full_sig(model, dataset_org, orbital, atom=1, display=True, img_sav
 
 def evaluate_full_sig_legendre(model, dataset_org, orbital, atom=0, display=True, img_save_dir = None):
     r"""
-    Evaluate the $\Sigma(i\omega_n)$ of model on a dataset 
+    Evaluate the :math:`\Sigma(i\omega_n)` of model on a dataset 
 
     Parameters 
     ----------
-      model: sigml.models.Sig_iws_Model.Sig_iws_Model
-        The $\Sigma(i\omega_n)$ model to evaluate 
-      dataset_org: list of tg.data.Data objects
-        The dataset to evaluate the $\Sigma(i\omega_n)$ on
-      orbital: int, default = 0
-        The orbital to evaluate the $\Sigma(i\omega_n)$ on
-      atom: int, default = 0
-        The atom number to evaluate the $\Sigma(i\omega_n)$ on. The atom number must match a unique correlated atom, symmetrically equivalent atoms are not considered
-      display: bool, default = True
-        Whether or not to display the plot. If false, img_save_dir must be provided
-      img_save_dir: str, default = None
-        The directory to save the plot if not displayed 
-      device: str, default = "cpu"
-        The device to evaluate the model on
+    model: sigml.models.Sig_iws_Model.Sig_iws_Model
+      The :math:`\Sigma(i\omega_n)` model to evaluate 
+    dataset_org: list of tg.data.Data objects
+      The dataset to evaluate the :math:`\Sigma(i\omega_n)` on
+    orbital: int, default = 0
+      The orbital to evaluate the :math:`\Sigma(i\omega_n)` on
+    atom: int, default = 0
+      The atom number to evaluate the :math:`\Sigma(i\omega_n)` on. The atom number must match a unique correlated atom, symmetrically equivalent atoms are not considered
+    display: bool, default = True
+      Whether or not to display the plot. If false, img_save_dir must be provided
+    img_save_dir: str, default = None
+      The directory to save the plot if not displayed 
+    device: str, default = "cpu"
+      The device to evaluate the model on
     
     Returns
     -------
@@ -645,16 +645,16 @@ def evaluate_full_sig_legendre(model, dataset_org, orbital, atom=0, display=True
 
 def train_ef(model, optimizer, dataset, loss_fn, scheduler, save_path = None, max_iter=101, val_percent = 0.1, device="cpu", batch_size=1):
     r"""
-    Train the $E_f$ model on a dataset 
+    Train the :math:`E_f` model on a dataset 
 
     Parameters 
     ----------
       model: sigml.models.Ef_Model.Ef_Model
-        The $E_f$ model to evaluate 
+        The :math:`E_f` model to evaluate 
       optimizer: torch.optim.Optimizer
         The optimizer to use for training
       dataset: list of tg.data.Data objects
-        The dataset to train the $E_f$ on
+        The dataset to train the :math:`E_f` on
       loss_fn: torch.nn.Module
         The loss function to use for training
       scheduler: torch.optim.lr_scheduler
@@ -720,14 +720,14 @@ def train_ef(model, optimizer, dataset, loss_fn, scheduler, save_path = None, ma
 
 def evaluate_ef(model, dataset_org):
     r"""
-    Evaluate the $E_f$ of model on a dataset 
+    Evaluate the :math:`E_f` of model on a dataset 
 
     Parameters 
     ----------
       model: sigml.models.Ef_Model.Ef_Model
-        The $E_f$ model to evaluate 
+        The :math:`E_f` model to evaluate 
       dataset_org: list of tg.data.Data objects
-        The dataset to evaluate the $E_f$ on
+        The dataset to evaluate the :math:`E_f` on
     
     Returns
     -------
@@ -842,7 +842,7 @@ def get_sig_file_text(iws, sig, sinf, U, J, nf):
     header1 = "# s_oo= [" + ', '.join(f'{x:.14f}' for x in sinf) + "]\n"
     # header2 = "# Edc= [52.5, 52.5, 52.5, 52.5, 52.5, 52.5, 52.5, 52.5, 52.5, 52.5]\n"
     Edc = U*(nf - 0.5) - 0.5*J*(nf-1.0)
-    header2 = " Edc= [" + ', '.join(f'{Edc}' for _ in range(len(sinf))) + "]\n"
+    header2 = "# Edc= [" + ', '.join(f'{Edc}' for _ in range(len(sinf))) + "]\n"
 
 
     # valid_indices = []

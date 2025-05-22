@@ -3,16 +3,15 @@
    You can adapt this file completely to your liking, but it should at least
    contain the root `toctree` directive.
 
-SigML documentation
+SigML
 ===================
-
-Add your content using ``reStructuredText`` syntax. See the
-`reStructuredText <https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html>`_
-documentation for details.
+Welcome to SigML, a package for learning the self-energy from DMFT for the package EDMFTF. 
 
 
 .. toctree::
    :maxdepth: 2
    :caption: Contents:
   
+   usage
+   tutorial
    modules

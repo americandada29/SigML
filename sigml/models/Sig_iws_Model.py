@@ -102,16 +102,33 @@ class CrystalSelfEnergyNetwork(torch.nn.Module):
         return output
     
     
-def get_standard_full_sig_model(leg_lmax, ave_neighbor_count, cutoff=4.0, weight_path=None, device="cpu"):
+def get_standard_full_sig_model(ave_neighbor_count, leg_lmax, em_dim=64, mul=64, \
+                                interaction_layers=2, radial_layers=2, radial_neurons=64, lmax=2, orbital_count=5, \
+                                cutoff=4.0, weight_path=None, device="cpu"):
     r"""
-    Get a standard $\Sigma(i\omega)$ model
+    Get a standard :math:`\Sigma(i\omega)` model
 
     Parameters
     ----------
-    leg_lmax: int
-        The maximum angular momentum number $l_max$ used for the Legendre expansion
     ave_neighbor_count: int
         The average number of neighbors per atom
+    leg_lmax: int
+        The maximum angular momentum number :math:`l_max` used for the Legendre expansion
+    em_dim: int
+        Embedding dimension, the atomic one-hot representations for each atom are converted to from :math:`\mathbb{R}^{N_{atoms}\times 118` to 
+        :math:`\mathbb{R}^{N_{atoms}\times em\_dim}` before being fed into network
+    mul: int
+        Multiplicity of neurons within equivariant layers of the neural network. Higher means larger network
+    interaction_layers: int
+        Number of convolutional interaction layers 
+    radial_layers: int
+        Number of radial layers for encoding of atomic positions into spherical harmonics representation
+    radial_neurons: int
+        Number of neurons for each radial layer
+    lmax: int
+        Maximum irrep order to consider when building equivariant layers 
+    orbital_count: int
+        Number of orbitals within correlated subspace for each atoms. Currently only supports atoms of the same orbital count
     cutoff: float, optional, default = 4.0
         The cutoff radius of the model
     weight_path: str, optional, default = None
@@ -122,21 +139,21 @@ def get_standard_full_sig_model(leg_lmax, ave_neighbor_count, cutoff=4.0, weight
     Returns
     -------
     model: CrystalSelfEnergyNetwork
-        The standard $\Sigma(i\omega)$ model
+        The standard :math:`\Sigma(i\omega)` model
     """
     out_dim = leg_lmax
-    em_dim = 64
+    em_dim = em_dim
     model = CrystalSelfEnergyNetwork(in_dim=118,
                             em_dim=em_dim,
                             out_dim=out_dim,
-                            layers=2,
-                            mul=64,
-                            lmax=2,
-                            orbital_count=5,
+                            layers=interaction_layers,
+                            mul=mul,
+                            lmax=lmax,
+                            orbital_count=orbital_count,
                             radial_cutoff=cutoff,
                             neighbor_count=ave_neighbor_count,
-                            radial_layers = 2,
-                            radial_neurons = 64).to(device)
+                            radial_layers = radial_layers,
+                            radial_neurons = radial_neurons).to(device)
     if weight_path is not None:
         model.load_state_dict(torch.load(weight_path))
     return model.to(torch.float32)

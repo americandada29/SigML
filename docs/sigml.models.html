@@ -94,19 +94,26 @@
 <span id="sigml-models-ef-model-module"></span><h2>sigml.models.EF_Model module<a class="headerlink" href="#module-sigml.models.EF_Model" title="Link to this heading"></a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="sigml.models.EF_Model.get_standard_ef_model">
-<span class="sig-prename descclassname"><span class="pre">sigml.models.EF_Model.</span></span><span class="sig-name descname"><span class="pre">get_standard_ef_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ave_neighbor_count</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sigml.models.EF_Model.get_standard_ef_model" title="Link to this definition"></a></dt>
-<dd><p>Get a standard $E_f$ model</p>
+<span class="sig-prename descclassname"><span class="pre">sigml.models.EF_Model.</span></span><span class="sig-name descname"><span class="pre">get_standard_ef_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ave_neighbor_count</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">em_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mul</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interaction_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radial_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radial_neurons</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sigml.models.EF_Model.get_standard_ef_model" title="Link to this definition"></a></dt>
+<dd><p>Get a standard <span class="math notranslate nohighlight">\(E_f\)</span> model</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ave_neighbor_count</strong> (<em>int</em>) – The average number of neighbors per atom</p></li>
+<li><p><strong>em_dim</strong> (<em>int</em>) – Embedding dimension, the atomic one-hot representations for each atom are converted to from <span class="math notranslate nohighlight">\(\mathbb{R}^{N_{atoms}\times 118}\)</span> to
+<span class="math notranslate nohighlight">\(\mathbb{R}^{N_{atoms}\times em\_dim}\)</span> before being fed into network</p></li>
+<li><p><strong>mul</strong> (<em>int</em>) – Multiplicity of neurons within equivariant layers of the neural network. Higher means larger network</p></li>
+<li><p><strong>interaction_layers</strong> (<em>int</em>) – Number of convolutional interaction layers</p></li>
+<li><p><strong>radial_layers</strong> (<em>int</em>) – Number of radial layers for encoding of atomic positions into spherical harmonics representation</p></li>
+<li><p><strong>radial_neurons</strong> (<em>int</em>) – Number of neurons for each radial layer</p></li>
+<li><p><strong>lmax</strong> (<em>int</em>) – Maximum irrep order to consider when building equivariant layers</p></li>
 <li><p><strong>weight_path</strong> (<em>str</em><em>, </em><em>optional</em><em>, </em><em>default = None</em>) – The path to the weights of the model if model has been previously trained and saved</p></li>
-<li><p><strong>cutoff</strong> (<em>float</em><em>, </em><em>optional</em><em>, </em><em>default = 4.0</em>) – The cutoff radius of the model</p></li>
+<li><p><strong>cutoff</strong> (<em>float</em><em>, </em><em>optional</em><em>, </em><em>default = 4.0</em>) – The cutoff radius of the model when considering neighbors for the graph neural network</p></li>
 <li><p><strong>device</strong> (<em>str</em><em>, </em><em>optional</em><em>, </em><em>default = &quot;cpu&quot;</em>) – The device to build the model on</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>model</strong> – The standard $E_f$ model</p>
+<dd class="field-even"><p><strong>model</strong> – The standard <span class="math notranslate nohighlight">\(E_f\)</span> model</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p><cite>sigml.models.EF_Model.EF_Model</cite></p>
@@ -119,20 +126,28 @@
 <span id="sigml-models-sig-iws-model-module"></span><h2>sigml.models.Sig_iws_Model module<a class="headerlink" href="#module-sigml.models.Sig_iws_Model" title="Link to this heading"></a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="sigml.models.Sig_iws_Model.get_standard_full_sig_model">
-<span class="sig-prename descclassname"><span class="pre">sigml.models.Sig_iws_Model.</span></span><span class="sig-name descname"><span class="pre">get_standard_full_sig_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">leg_lmax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">ave_neighbor_count</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sigml.models.Sig_iws_Model.get_standard_full_sig_model" title="Link to this definition"></a></dt>
-<dd><p>Get a standard $Sigma(iomega)$ model</p>
+<span class="sig-prename descclassname"><span class="pre">sigml.models.Sig_iws_Model.</span></span><span class="sig-name descname"><span class="pre">get_standard_full_sig_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ave_neighbor_count</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">leg_lmax</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">em_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mul</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interaction_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radial_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radial_neurons</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orbital_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sigml.models.Sig_iws_Model.get_standard_full_sig_model" title="Link to this definition"></a></dt>
+<dd><p>Get a standard <span class="math notranslate nohighlight">\(\Sigma(i\omega)\)</span> model</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>leg_lmax</strong> (<em>int</em>) – The maximum angular momentum number $l_max$ used for the Legendre expansion</p></li>
 <li><p><strong>ave_neighbor_count</strong> (<em>int</em>) – The average number of neighbors per atom</p></li>
+<li><p><strong>leg_lmax</strong> (<em>int</em>) – The maximum angular momentum number <span class="math notranslate nohighlight">\(l_max\)</span> used for the Legendre expansion</p></li>
+<li><p><strong>em_dim</strong> (<em>int</em>) – Embedding dimension, the atomic one-hot representations for each atom are converted to from <span class="math notranslate nohighlight">\(\mathbb{R}^{N_{atoms}\times 118\)</span> to
+<span class="math notranslate nohighlight">\(\mathbb{R}^{N_{atoms}\times em\_dim}\)</span> before being fed into network</p></li>
+<li><p><strong>mul</strong> (<em>int</em>) – Multiplicity of neurons within equivariant layers of the neural network. Higher means larger network</p></li>
+<li><p><strong>interaction_layers</strong> (<em>int</em>) – Number of convolutional interaction layers</p></li>
+<li><p><strong>radial_layers</strong> (<em>int</em>) – Number of radial layers for encoding of atomic positions into spherical harmonics representation</p></li>
+<li><p><strong>radial_neurons</strong> (<em>int</em>) – Number of neurons for each radial layer</p></li>
+<li><p><strong>lmax</strong> (<em>int</em>) – Maximum irrep order to consider when building equivariant layers</p></li>
+<li><p><strong>orbital_count</strong> (<em>int</em>) – Number of orbitals within correlated subspace for each atoms. Currently only supports atoms of the same orbital count</p></li>
 <li><p><strong>cutoff</strong> (<em>float</em><em>, </em><em>optional</em><em>, </em><em>default = 4.0</em>) – The cutoff radius of the model</p></li>
 <li><p><strong>weight_path</strong> (<em>str</em><em>, </em><em>optional</em><em>, </em><em>default = None</em>) – The path to the weights of the model if model has been previously trained and saved</p></li>
 <li><p><strong>device</strong> (<em>str</em><em>, </em><em>optional</em><em>, </em><em>default = &quot;cpu&quot;</em>) – The device to build the model on</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>model</strong> – The standard $Sigma(iomega)$ model</p>
+<dd class="field-even"><p><strong>model</strong> – The standard <span class="math notranslate nohighlight">\(\Sigma(i\omega)\)</span> model</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>CrystalSelfEnergyNetwork</p>
@@ -145,19 +160,27 @@
 <span id="sigml-models-sinf-model-module"></span><h2>sigml.models.Sinf_Model module<a class="headerlink" href="#module-sigml.models.Sinf_Model" title="Link to this heading"></a></h2>
 <dl class="py function">
 <dt class="sig sig-object py" id="sigml.models.Sinf_Model.get_standard_sinf_model">
-<span class="sig-prename descclassname"><span class="pre">sigml.models.Sinf_Model.</span></span><span class="sig-name descname"><span class="pre">get_standard_sinf_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ave_neighbor_count</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sigml.models.Sinf_Model.get_standard_sinf_model" title="Link to this definition"></a></dt>
-<dd><p>Get a standard $Sigma_{infty}$ model</p>
+<span class="sig-prename descclassname"><span class="pre">sigml.models.Sinf_Model.</span></span><span class="sig-name descname"><span class="pre">get_standard_sinf_model</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">ave_neighbor_count</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">em_dim</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">16</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">mul</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">32</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interaction_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radial_layers</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">radial_neurons</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">64</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">lmax</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">2</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orbital_count</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">5</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">cutoff</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">4.0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">weight_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sigml.models.Sinf_Model.get_standard_sinf_model" title="Link to this definition"></a></dt>
+<dd><p>Get a standard <span class="math notranslate nohighlight">\(\Sigma_{\infty}\)</span> model</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
 <li><p><strong>ave_neighbor_count</strong> (<em>int</em>) – The average number of neighbors per atom</p></li>
+<li><p><strong>em_dim</strong> (<em>int</em>) – Embedding dimension, the atomic one-hot representations for each atom are converted to from <span class="math notranslate nohighlight">\(\mathbb{R}^{N_{atoms}\times 118\)</span> to
+<span class="math notranslate nohighlight">\(\mathbb{R}^{N_{atoms}\times em_dim\)</span> before being fed into network</p></li>
+<li><p><strong>mul</strong> (<em>int</em>) – Multiplicity of neurons within equivariant layers of the neural network. Higher means larger network</p></li>
+<li><p><strong>interaction_layers</strong> (<em>int</em>) – Number of convolutional interaction layers</p></li>
+<li><p><strong>radial_layers</strong> (<em>int</em>) – Number of radial layers for encoding of atomic positions into spherical harmonics representation</p></li>
+<li><p><strong>radial_neurons</strong> (<em>int</em>) – Number of neurons for each radial layer</p></li>
+<li><p><strong>lmax</strong> (<em>int</em>) – Maximum irrep order to consider when building equivariant layers</p></li>
+<li><p><strong>orbital_count</strong> (<em>int</em>) – Number of orbitals within correlated subspace for each atoms. Currently only supports atoms of the same orbital count</p></li>
 <li><p><strong>cutoff</strong> (<em>float</em><em>, </em><em>optional</em><em>, </em><em>default = 4.0</em>) – The cutoff radius of the model</p></li>
 <li><p><strong>weight_path</strong> (<em>str</em><em>, </em><em>optional</em><em>, </em><em>default = None</em>) – The path to the weights of the model if model has been previously trained and saved</p></li>
 <li><p><strong>device</strong> (<em>str</em><em>, </em><em>optional</em><em>, </em><em>default = &quot;cpu&quot;</em>) – The device to build the model on</p></li>
 </ul>
 </dd>
 <dt class="field-even">Returns<span class="colon">:</span></dt>
-<dd class="field-even"><p><strong>model</strong> – The standard $Sigma_{infty}$ model</p>
+<dd class="field-even"><p><strong>model</strong> – The standard <span class="math notranslate nohighlight">\(\Sigma_{\infty}\)</span> model</p>
 </dd>
 <dt class="field-odd">Return type<span class="colon">:</span></dt>
 <dd class="field-odd"><p>Sinf_Model</p>
@@ -199,17 +222,28 @@ and <span class="math notranslate nohighlight">\(Y\)</span> are the spherical ha
 <dl class="py method">
 <dt class="sig sig-object py" id="sigml.models.network.Network.forward">
 <span class="sig-name descname"><span class="pre">forward</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">data</span></span><span class="p"><span class="pre">:</span></span><span class="w"> </span><span class="n"><span class="pre">Data</span><span class="w"> </span><span class="p"><span class="pre">|</span></span><span class="w"> </span><span class="pre">Dict</span><span class="p"><span class="pre">[</span></span><span class="pre">str</span><span class="p"><span class="pre">,</span></span><span class="w"> </span><span class="pre">Tensor</span><span class="p"><span class="pre">]</span></span></span></em><span class="sig-paren">)</span> <span class="sig-return"><span class="sig-return-icon">&#x2192;</span> <span class="sig-return-typehint"><span class="pre">Tensor</span></span></span><a class="headerlink" href="#sigml.models.network.Network.forward" title="Link to this definition"></a></dt>
-<dd><p>evaluate the network
-:param data: data object containing</p>
-<blockquote>
-<div><ul class="simple">
-<li><p><code class="docutils literal notranslate"><span class="pre">pos</span></code> the position of the nodes (atoms)</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">x</span></code> the input features of the nodes, optional</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">z</span></code> the attributes of the nodes, for instance the atom type, optional</p></li>
-<li><p><code class="docutils literal notranslate"><span class="pre">batch</span></code> the graph to which the node belong, optional</p></li>
-</ul>
-</div></blockquote>
+<dd><p>Evaluate the network</p>
 <dl class="field-list simple">
+<dt class="field-odd">Parameters<span class="colon">:</span></dt>
+<dd class="field-odd"><ul class="simple">
+<li><p><strong>data</strong> (<cite>torch_geometric.data.Data</cite> or dict)</p></li>
+<li><p><strong>containing</strong> (<em>data object</em>)</p></li>
+<li><p><strong>(</strong><strong>atoms</strong><strong>)</strong> (<em>- pos the position</em><em> of </em><em>the nodes</em>)</p></li>
+<li><p><strong>nodes</strong> (<em>- z the attributes</em><em> of </em><em>the</em>)</p></li>
+<li><p><strong>optional</strong></p></li>
+<li><p><strong>nodes</strong></p></li>
+<li><p><strong>type</strong> (<em>for instance the atom</em>)</p></li>
+<li><p><strong>optional</strong></p></li>
+<li><p><strong>belong</strong> (<em>- batch the graph to which the node</em>)</p></li>
+<li><p><strong>optional</strong></p></li>
+</ul>
+</dd>
+<dt class="field-even">Returns<span class="colon">:</span></dt>
+<dd class="field-even"><p><strong>x</strong> – The output features of the nodes</p>
+</dd>
+<dt class="field-odd">Return type<span class="colon">:</span></dt>
+<dd class="field-odd"><p>torch.Tensor</p>
+</dd>
 </dl>
 </dd></dl>
 

@@ -16,6 +16,7 @@
       <script src="_static/documentation_options.js?v=01f34227"></script>
       <script src="_static/doctools.js?v=9bcbadda"></script>
       <script src="_static/sphinx_highlight.js?v=dc90522c"></script>
+      <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
     <script src="_static/js/theme.js"></script>
     <link rel="index" title="Index" href="genindex.html" />
     <link rel="search" title="Search" href="search.html" />
@@ -119,12 +120,12 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="sigml.utils.utils.evaluate_ef">
 <span class="sig-prename descclassname"><span class="pre">sigml.utils.utils.</span></span><span class="sig-name descname"><span class="pre">evaluate_ef</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_org</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sigml.utils.utils.evaluate_ef" title="Link to this definition"></a></dt>
-<dd><p>Evaluate the $E_f$ of model on a dataset</p>
+<dd><p>Evaluate the <span class="math notranslate nohighlight">\(E_f\)</span> of model on a dataset</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<em>sigml.models.Ef_Model.Ef_Model</em>) – The $E_f$ model to evaluate</p></li>
-<li><p><strong>dataset_org</strong> (<em>list</em><em> of </em><em>tg.data.Data objects</em>) – The dataset to evaluate the $E_f$ on</p></li>
+<li><p><strong>model</strong> (<em>sigml.models.Ef_Model.Ef_Model</em>) – The <span class="math notranslate nohighlight">\(E_f\)</span> model to evaluate</p></li>
+<li><p><strong>dataset_org</strong> (<em>list</em><em> of </em><em>tg.data.Data objects</em>) – The dataset to evaluate the <span class="math notranslate nohighlight">\(E_f\)</span> on</p></li>
 </ul>
 </dd>
 <dt class="field-even">Return type<span class="colon">:</span></dt>
@@ -136,14 +137,14 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="sigml.utils.utils.evaluate_full_sig">
 <span class="sig-prename descclassname"><span class="pre">sigml.utils.utils.</span></span><span class="sig-name descname"><span class="pre">evaluate_full_sig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_org</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orbital</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atom</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">img_save_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sigml.utils.utils.evaluate_full_sig" title="Link to this definition"></a></dt>
-<dd><p>Evaluate the $Sigma(iomega_n)$ of model on a dataset. CAUTION: This function is depreciated. Use evaluate_full_sig_legendre instead.</p>
+<dd><p>Evaluate the <span class="math notranslate nohighlight">\(\Sigma(i\omega_n)\)</span> of model on a dataset. CAUTION: This function is depreciated. Use evaluate_full_sig_legendre instead.</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<em>sigml.models.Sig_iws_Model.Sig_iws_Model</em>) – The $Sigma(iomega_n)$ model to evaluate</p></li>
-<li><p><strong>dataset_org</strong> (<em>list</em><em> of </em><em>tg.data.Data objects</em>) – The dataset to evaluate the $Sigma(iomega_n)$ on</p></li>
-<li><p><strong>orbital</strong> (<em>int</em><em>, </em><em>default = 0</em>) – The orbital to evaluate the $Sigma(iomega_n)$ on</p></li>
-<li><p><strong>atom</strong> (<em>int</em><em>, </em><em>default = 0</em>) – The atom number to evaluate the $Sigma(iomega_n)$ on. The atom number must match a unique correlated atom, symmetrically equivalent atoms are not considered</p></li>
+<li><p><strong>model</strong> (<em>sigml.models.Sig_iws_Model.Sig_iws_Model</em>) – The <span class="math notranslate nohighlight">\(\Sigma(i\omega_n)\)</span> model to evaluate</p></li>
+<li><p><strong>dataset_org</strong> (<em>list</em><em> of </em><em>tg.data.Data objects</em>) – The dataset to evaluate the <span class="math notranslate nohighlight">\(\Sigma(i\omega_n)\)</span> on</p></li>
+<li><p><strong>orbital</strong> (<em>int</em><em>, </em><em>default = 0</em>) – The orbital to evaluate the <span class="math notranslate nohighlight">\(\Sigma(i\omega_n)\)</span> on</p></li>
+<li><p><strong>atom</strong> (<em>int</em><em>, </em><em>default = 0</em>) – The atom number to evaluate the <span class="math notranslate nohighlight">\(\Sigma(i\omega_n)\)</span> on. The atom number must match a unique correlated atom, symmetrically equivalent atoms are not considered</p></li>
 <li><p><strong>display</strong> (<em>bool</em><em>, </em><em>default = True</em>) – Whether or not to display the plot. If false, img_save_dir must be provided</p></li>
 <li><p><strong>img_save_dir</strong> (<em>str</em><em>, </em><em>default = None</em>) – The directory to save the plot if not displayed</p></li>
 <li><p><strong>device</strong> (<em>str</em><em>, </em><em>default = &quot;cpu&quot;</em>) – The device to evaluate the model on</p></li>
@@ -158,14 +159,14 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="sigml.utils.utils.evaluate_full_sig_legendre">
 <span class="sig-prename descclassname"><span class="pre">sigml.utils.utils.</span></span><span class="sig-name descname"><span class="pre">evaluate_full_sig_legendre</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_org</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">orbital</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">atom</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">img_save_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sigml.utils.utils.evaluate_full_sig_legendre" title="Link to this definition"></a></dt>
-<dd><p>Evaluate the $Sigma(iomega_n)$ of model on a dataset</p>
+<dd><p>Evaluate the <span class="math notranslate nohighlight">\(\Sigma(i\omega_n)\)</span> of model on a dataset</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<em>sigml.models.Sig_iws_Model.Sig_iws_Model</em>) – The $Sigma(iomega_n)$ model to evaluate</p></li>
-<li><p><strong>dataset_org</strong> (<em>list</em><em> of </em><em>tg.data.Data objects</em>) – The dataset to evaluate the $Sigma(iomega_n)$ on</p></li>
-<li><p><strong>orbital</strong> (<em>int</em><em>, </em><em>default = 0</em>) – The orbital to evaluate the $Sigma(iomega_n)$ on</p></li>
-<li><p><strong>atom</strong> (<em>int</em><em>, </em><em>default = 0</em>) – The atom number to evaluate the $Sigma(iomega_n)$ on. The atom number must match a unique correlated atom, symmetrically equivalent atoms are not considered</p></li>
+<li><p><strong>model</strong> (<em>sigml.models.Sig_iws_Model.Sig_iws_Model</em>) – The <span class="math notranslate nohighlight">\(\Sigma(i\omega_n)\)</span> model to evaluate</p></li>
+<li><p><strong>dataset_org</strong> (<em>list</em><em> of </em><em>tg.data.Data objects</em>) – The dataset to evaluate the <span class="math notranslate nohighlight">\(\Sigma(i\omega_n)\)</span> on</p></li>
+<li><p><strong>orbital</strong> (<em>int</em><em>, </em><em>default = 0</em>) – The orbital to evaluate the <span class="math notranslate nohighlight">\(\Sigma(i\omega_n)\)</span> on</p></li>
+<li><p><strong>atom</strong> (<em>int</em><em>, </em><em>default = 0</em>) – The atom number to evaluate the <span class="math notranslate nohighlight">\(\Sigma(i\omega_n)\)</span> on. The atom number must match a unique correlated atom, symmetrically equivalent atoms are not considered</p></li>
 <li><p><strong>display</strong> (<em>bool</em><em>, </em><em>default = True</em>) – Whether or not to display the plot. If false, img_save_dir must be provided</p></li>
 <li><p><strong>img_save_dir</strong> (<em>str</em><em>, </em><em>default = None</em>) – The directory to save the plot if not displayed</p></li>
 <li><p><strong>device</strong> (<em>str</em><em>, </em><em>default = &quot;cpu&quot;</em>) – The device to evaluate the model on</p></li>
@@ -180,12 +181,12 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="sigml.utils.utils.evaluate_sinf">
 <span class="sig-prename descclassname"><span class="pre">sigml.utils.utils.</span></span><span class="sig-name descname"><span class="pre">evaluate_sinf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset_org</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">display</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">img_save_dir</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sigml.utils.utils.evaluate_sinf" title="Link to this definition"></a></dt>
-<dd><p>Evaluate the $Sigma_{infty}$ of model on a dataset</p>
+<dd><p>Evaluate the <span class="math notranslate nohighlight">\(\Sigma_{\infty}\)</span> of model on a dataset</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<em>sigml.models.Sinf_Model.Sinf_Model</em>) – The $Sigma_{infty}$ model to evaluate</p></li>
-<li><p><strong>dataset_org</strong> (<em>list</em><em> of </em><em>tg.data.Data objects</em>) – The dataset to evaluate the $Sigma_{infty}$ on</p></li>
+<li><p><strong>model</strong> (<em>sigml.models.Sinf_Model.Sinf_Model</em>) – The <span class="math notranslate nohighlight">\(\Sigma_{\infty}\)</span> model to evaluate</p></li>
+<li><p><strong>dataset_org</strong> (<em>list</em><em> of </em><em>tg.data.Data objects</em>) – The dataset to evaluate the <span class="math notranslate nohighlight">\(\Sigma_{\infty}\)</span> on</p></li>
 <li><p><strong>display</strong> (<em>bool</em><em>, </em><em>default = True</em>) – Whether or not to display the plot. If false, img_save_dir must be provided</p></li>
 <li><p><strong>img_save_dir</strong> (<em>str</em><em>, </em><em>default = None</em>) – The directory to save the plot if not displayed</p></li>
 <li><p><strong>device</strong> (<em>str</em><em>, </em><em>default = &quot;cpu&quot;</em>) – The device to evaluate the model on</p></li>
@@ -263,13 +264,13 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="sigml.utils.utils.train_ef">
 <span class="sig-prename descclassname"><span class="pre">sigml.utils.utils.</span></span><span class="sig-name descname"><span class="pre">train_ef</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scheduler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">101</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_percent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sigml.utils.utils.train_ef" title="Link to this definition"></a></dt>
-<dd><p>Train the $E_f$ model on a dataset</p>
+<dd><p>Train the <span class="math notranslate nohighlight">\(E_f\)</span> model on a dataset</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<em>sigml.models.Ef_Model.Ef_Model</em>) – The $E_f$ model to evaluate</p></li>
+<li><p><strong>model</strong> (<em>sigml.models.Ef_Model.Ef_Model</em>) – The <span class="math notranslate nohighlight">\(E_f\)</span> model to evaluate</p></li>
 <li><p><strong>optimizer</strong> (<em>torch.optim.Optimizer</em>) – The optimizer to use for training</p></li>
-<li><p><strong>dataset</strong> (<em>list</em><em> of </em><em>tg.data.Data objects</em>) – The dataset to train the $E_f$ on</p></li>
+<li><p><strong>dataset</strong> (<em>list</em><em> of </em><em>tg.data.Data objects</em>) – The dataset to train the <span class="math notranslate nohighlight">\(E_f\)</span> on</p></li>
 <li><p><strong>loss_fn</strong> (<em>torch.nn.Module</em>) – The loss function to use for training</p></li>
 <li><p><strong>scheduler</strong> (<em>torch.optim.lr_scheduler</em>) – The scheduler to use for training</p></li>
 <li><p><strong>save_path</strong> (<em>str</em><em>, </em><em>default = None</em>) – The path to save the model. If None, the model will not be saved in a directory</p></li>
@@ -288,13 +289,13 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="sigml.utils.utils.train_full_sig">
 <span class="sig-prename descclassname"><span class="pre">sigml.utils.utils.</span></span><span class="sig-name descname"><span class="pre">train_full_sig</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scheduler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">101</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_percent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sigml.utils.utils.train_full_sig" title="Link to this definition"></a></dt>
-<dd><p>Train the $Sigma(iomega_n)$ model on a dataset</p>
+<dd><p>Train the <span class="math notranslate nohighlight">\(\Sigma(i\omega_n)\)</span> model on a dataset</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<em>sigml.models.Sig_iws_Model.Sig_iws_Model</em>) – The $Sigma(iomega_n)$ model to evaluate</p></li>
+<li><p><strong>model</strong> (<em>sigml.models.Sig_iws_Model.Sig_iws_Model</em>) – The <span class="math notranslate nohighlight">\(\Sigma(i\omega_n)\)</span> model to evaluate</p></li>
 <li><p><strong>optimizer</strong> (<em>torch.optim.Optimizer</em>) – The optimizer to use for training</p></li>
-<li><p><strong>dataset</strong> (<em>list</em><em> of </em><em>tg.data.Data objects</em>) – The dataset to train the $Sigma(iomega_n)$ on</p></li>
+<li><p><strong>dataset</strong> (<em>list</em><em> of </em><em>tg.data.Data objects</em>) – The dataset to train the <span class="math notranslate nohighlight">\(\Sigma(i\omega_n)\)</span> on</p></li>
 <li><p><strong>loss_fn</strong> (<em>torch.nn.Module</em>) – The loss function to use for training</p></li>
 <li><p><strong>scheduler</strong> (<em>torch.optim.lr_scheduler</em>) – The scheduler to use for training</p></li>
 <li><p><strong>save_path</strong> (<em>str</em><em>, </em><em>default = None</em>) – The path to save the model. If None, the model will not be saved in a directory</p></li>
@@ -313,13 +314,13 @@
 <dl class="py function">
 <dt class="sig sig-object py" id="sigml.utils.utils.train_sinf">
 <span class="sig-prename descclassname"><span class="pre">sigml.utils.utils.</span></span><span class="sig-name descname"><span class="pre">train_sinf</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">model</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">optimizer</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">dataset</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">loss_fn</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">scheduler</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">save_path</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">None</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">max_iter</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">101</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">val_percent</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">0.1</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">device</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">'cpu'</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">batch_size</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#sigml.utils.utils.train_sinf" title="Link to this definition"></a></dt>
-<dd><p>Train the $Sigma_{infty}$ model on a dataset</p>
+<dd><p>Train the <span class="math notranslate nohighlight">\(\Sigma_{\infty}\)</span> model on a dataset</p>
 <dl class="field-list simple">
 <dt class="field-odd">Parameters<span class="colon">:</span></dt>
 <dd class="field-odd"><ul class="simple">
-<li><p><strong>model</strong> (<em>sigml.models.Sinf_Model.Sinf_Model</em>) – The $Sigma_{infty}$ model to evaluate</p></li>
+<li><p><strong>model</strong> (<em>sigml.models.Sinf_Model.Sinf_Model</em>) – The <span class="math notranslate nohighlight">\(\Sigma_{\infty}\)</span> model to evaluate</p></li>
 <li><p><strong>optimizer</strong> (<em>torch.optim.Optimizer</em>) – The optimizer to use for training</p></li>
-<li><p><strong>dataset</strong> (<em>list</em><em> of </em><em>tg.data.Data objects</em>) – The dataset to train the $Sigma_{infty}$ on</p></li>
+<li><p><strong>dataset</strong> (<em>list</em><em> of </em><em>tg.data.Data objects</em>) – The dataset to train the <span class="math notranslate nohighlight">\(\Sigma_{\infty}\)</span> on</p></li>
 <li><p><strong>loss_fn</strong> (<em>torch.nn.Module</em>) – The loss function to use for training</p></li>
 <li><p><strong>scheduler</strong> (<em>torch.optim.lr_scheduler</em>) – The scheduler to use for training</p></li>
 <li><p><strong>save_path</strong> (<em>str</em><em>, </em><em>default = None</em>) – The path to save the model. If None, the model will not be saved in a directory</p></li>

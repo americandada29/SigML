@@ -53,14 +53,31 @@ class Sinf_Model(Network):
         return output
 
 
-def get_standard_sinf_model(ave_neighbor_count, cutoff=4.0, weight_path=None, device="cpu"):
+def get_standard_sinf_model(ave_neighbor_count, em_dim=16, mul=32, \
+                            interaction_layers=2, radial_layers=2, radial_neurons=64, lmax=2, \
+                            orbital_count=5, cutoff=4.0, weight_path=None, device="cpu"):
     r"""
-    Get a standard $\Sigma_{\infty}$ model
+    Get a standard :math:`\Sigma_{\infty}` model
 
     Parameters
     ----------
     ave_neighbor_count: int
         The average number of neighbors per atom
+    em_dim: int
+        Embedding dimension, the atomic one-hot representations for each atom are converted to from :math:`\mathbb{R}^{N_{atoms}\times 118` to 
+        :math:`\mathbb{R}^{N_{atoms}\times em_dim` before being fed into network
+    mul: int
+        Multiplicity of neurons within equivariant layers of the neural network. Higher means larger network
+    interaction_layers: int
+        Number of convolutional interaction layers 
+    radial_layers: int
+        Number of radial layers for encoding of atomic positions into spherical harmonics representation
+    radial_neurons: int
+        Number of neurons for each radial layer
+    lmax: int
+        Maximum irrep order to consider when building equivariant layers 
+    orbital_count: int
+        Number of orbitals within correlated subspace for each atoms. Currently only supports atoms of the same orbital count
     cutoff: float, optional, default = 4.0
         The cutoff radius of the model
     weight_path: str, optional, default = None
@@ -71,23 +88,23 @@ def get_standard_sinf_model(ave_neighbor_count, cutoff=4.0, weight_path=None, de
     Returns
     -------
     model: Sinf_Model
-        The standard $\Sigma_{\infty}$ model
+        The standard :math:`\Sigma_{\infty}` model
     """
-    out_dim = 5
-    em_dim = 16
+    out_dim = orbital_count
+    em_dim = em_dim
     model = Sinf_Model(in_dim = 118,
-                            em_dim= em_dim,
-                            irreps_in = str(em_dim) + "x0e",
-                            irreps_out = str(out_dim) + "x0e",
-                            irreps_node_attr = str(em_dim) + "x0e",
-                            layers=2,
-                            mul=32,
-                            lmax=2,
-                            max_radius=cutoff,
-                            num_neighbors=ave_neighbor_count,
-                            radial_layers = 2,
-                            radial_neurons = 64,
-                            reduce_output=False).to(device)
+						em_dim= em_dim,
+						irreps_in = str(em_dim) + "x0e",
+						irreps_out = str(out_dim) + "x0e",
+						irreps_node_attr = str(em_dim) + "x0e",
+						layers=interaction_layers,
+						mul=mul,
+						lmax=lmax,
+						max_radius=cutoff,
+						num_neighbors=ave_neighbor_count,
+						radial_layers = radial_layers,
+						radial_neurons = radial_neurons,
+						reduce_output=False).to(device)
     if weight_path is not None:
         model.load_state_dict(torch.load(weight_path))
     return model.to(torch.float32)

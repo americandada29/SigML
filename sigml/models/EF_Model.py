@@ -48,38 +48,55 @@ class EF_Model(Network):
         return output
 
 
-def get_standard_ef_model(ave_neighbor_count, weight_path=None, cutoff=4.0, device="cpu"):
-    """
-    Get a standard $E_f$ model
+def get_standard_ef_model(ave_neighbor_count, em_dim=32, mul=16, \
+                            interaction_layers=2, radial_layers=2, radial_neurons=64, \
+                            lmax=2, weight_path=None, cutoff=4.0, device="cpu"):
+    r"""
+    Get a standard :math:`E_f` model
 
     Parameters
     ----------
     ave_neighbor_count: int
         The average number of neighbors per atom
+    em_dim: int
+        Embedding dimension, the atomic one-hot representations for each atom are converted to from :math:`\mathbb{R}^{N_{atoms}\times 118}` to 
+        :math:`\mathbb{R}^{N_{atoms}\times em\_dim}` before being fed into network
+    mul: int
+        Multiplicity of neurons within equivariant layers of the neural network. Higher means larger network
+    interaction_layers: int
+        Number of convolutional interaction layers 
+    radial_layers: int
+        Number of radial layers for encoding of atomic positions into spherical harmonics representation
+    radial_neurons: int
+        Number of neurons for each radial layer
+    lmax: int
+        Maximum irrep order to consider when building equivariant layers 
     weight_path: str, optional, default = None
         The path to the weights of the model if model has been previously trained and saved
     cutoff: float, optional, default = 4.0
-        The cutoff radius of the model
+        The cutoff radius of the model when considering neighbors for the graph neural network
     device: str, optional, default = "cpu"
         The device to build the model on
         
     Returns
     -------
     model: `sigml.models.EF_Model.EF_Model`
-        The standard $E_f$ model
+        The standard :math:`E_f` model
     """
     out_dim = 1
-    em_dim = 32
+    em_dim = em_dim
     model = EF_Model(in_dim = 118,
                     em_dim= em_dim,
                     irreps_in = str(em_dim) + "x0e",
                     irreps_out = str(out_dim) + "x0e",
                     irreps_node_attr = str(em_dim) + "x0e",
-                    layers=2,
-                    mul=16,
-                    lmax=2,
+                    layers=interaction_layers,
+                    mul=mul,
+                    lmax=lmax,
                     max_radius=cutoff,
                     num_neighbors=ave_neighbor_count,
+                    radial_layers=radial_layers, 
+                    radial_neurons = radial_neurons,
                     reduce_output=True).to(device)
     if weight_path is not None:
         model.load_state_dict(torch.load(weight_path))
