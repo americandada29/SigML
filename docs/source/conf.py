@@ -33,7 +33,7 @@ extensions = [
     'sphinx.ext.mathjax',
 ]
 
-autodoc_mock_imports = ["torch","e3nn","numpy","scipy","nequip","ase","pymatgen","matplotlib","torch_geometric"]
+autodoc_mock_imports = ["torch","e3nn","numpy","scipy","nequip","ase","pymatgen","matplotlib","torch_geometric", "torch_cluster","torch_scatter","triqs"]
 
 
 templates_path = ['_templates']
