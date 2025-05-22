@@ -33,6 +33,9 @@ extensions = [
     'sphinx.ext.mathjax',
 ]
 
+autodoc_mock_imports = ["torch","e3nn","numpy","scipy","nequip","ase","pymatgen","matplotlib","torch_geometric"]
+
+
 templates_path = ['_templates']
 exclude_patterns = []
 
