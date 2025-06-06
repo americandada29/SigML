@@ -577,7 +577,7 @@ def evaluate_full_sig(model, dataset_org, orbital, atom=1, display=True, img_sav
         plt.savefig(img_save_dir + f"/{orbital}_full_sig.pdf")
 
 
-def evaluate_full_sig_legendre(model, dataset_org, orbital, N=3, atom=0, display=True, img_save_dir = None):
+def evaluate_full_sig_legendre(model, dataset_org, orbital, atom=0, N=3, display=True, img_save_dir = None):
     r"""
     Evaluate the :math:`\Sigma(i\omega_n)` of model on a dataset 
 
@@ -591,6 +591,8 @@ def evaluate_full_sig_legendre(model, dataset_org, orbital, N=3, atom=0, display
       The orbital to evaluate the :math:`\Sigma(i\omega_n)` on
     atom: int, default = 0
       The atom number to evaluate the :math:`\Sigma(i\omega_n)` on. The atom number must match a unique correlated atom, symmetrically equivalent atoms are not considered
+    N: int, default = 3
+      The grid size to display results (N x N grid)
     display: bool, default = True
       Whether or not to display the plot. If false, img_save_dir must be provided
     img_save_dir: str, default = None
