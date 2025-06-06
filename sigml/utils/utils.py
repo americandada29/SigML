@@ -142,7 +142,7 @@ def get_correlated_atoms_inds(atom, cor_atoms):
     return cor_atom_inds, eq_inds
 
 
-def build_datapoint(atom, type_encoding, type_onehot, am_onehot, sig_text=None, ef=None, r_max=4.0, device="cpu"):
+def build_datapoint(atom, type_encoding, type_onehot, am_onehot, sig_text=None, ef=None, r_max=4.0, leg_lmax=30, device="cpu"):
     symbols = list(atom.get_chemical_symbols())
     cor_atoms = list(set([symbols[i] for i in range(len(atom.get_atomic_numbers())) if atom.get_atomic_numbers()[i] > 20]))
     positions = torch.as_tensor(atom.positions,  dtype=torch.float32, device=device)
@@ -159,7 +159,7 @@ def build_datapoint(atom, type_encoding, type_onehot, am_onehot, sig_text=None, 
         sig = build_sig_matrix_fortran(sig)
         cor_atom_inds, eq_inds = get_correlated_atoms_inds(atom, cor_atoms)
         sig_org = copy.deepcopy(sig)
-        sig = fullatom_gl_from_giw(iws, sig, lmax=30)
+        sig = fullatom_gl_from_giw(iws, sig, lmax=leg_lmax)
         iws = torch.as_tensor(iws, dtype=torch.float32, device=device).unsqueeze(0)
         # sig, cor_atom_inds, eq_inds = cast_sig_over_symmetric_atoms(atom, sig, cor_atoms)
         cor_atom_inds = torch.as_tensor(cor_atom_inds, dtype=torch.int16, device=device)
@@ -332,11 +332,13 @@ def evaluate_sinf(model, dataset_org, display=True, img_save_dir = None, device=
         # acts[i] = dataset[i].sinf.cpu().detach().numpy()
         preds.append(model(d).cpu().detach().numpy())
         acts.append(dataset[i].sinf.cpu().detach().numpy())
-    
     colors = ["red", "green", "blue", "orange", "purple"]
     for i in range(len(preds)):
         for j in range(len(preds[i])):
-            axs[j].scatter(preds[i][j], acts[i][j], c=colors)
+            if len(preds[i]) == 1:
+                axs.scatter(preds[i][j], acts[i][j], c=colors)
+            else:
+                axs[j].scatter(preds[i][j], acts[i][j], c=colors)
 
     amin = 100000
     amax = -100000
@@ -349,9 +351,14 @@ def evaluate_sinf(model, dataset_org, display=True, img_save_dir = None, device=
     
     for i in range(n_atoms):
         x = np.linspace(amin, amax, 1000)
-        axs[i].set_xlim(amin-0.5, amax+0.5)
-        axs[i].set_ylim(amin-0.5, amax+0.5)
-        axs[i].plot(x, x, linestyle="--", c="black")
+        if n_atoms == 1:
+            axs.set_xlim(amin-0.5, amax+0.5)
+            axs.set_ylim(amin-0.5, amax+0.5)
+            axs.plot(x, x, linestyle="--", c="black")
+        else:
+            axs[i].set_xlim(amin-0.5, amax+0.5)
+            axs[i].set_ylim(amin-0.5, amax+0.5)
+            axs[i].plot(x, x, linestyle="--", c="black")
     if display:
         plt.show()
     elif not(display) and img_save_dir is not None:
@@ -557,12 +564,12 @@ def evaluate_full_sig(model, dataset_org, orbital, atom=1, display=True, img_sav
     fig.add_subplot(111, frameon=False)
     # hide tick and tick label of the big axis
     plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
-    plt.xlabel("i$\omega_n$", labelpad=5, fontsize=25)
-    plt.ylabel("$\Sigma$(i$\omega_n$)", labelpad=20, fontsize=25)
+    plt.xlabel("i$\omega_n$", labelpad=0, fontsize=25)
+    plt.ylabel("$\Sigma$(i$\omega_n$)", labelpad=0, fontsize=25)
 
     handles, labels = axs[0,0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper right")
-    # plt.tight_layout()
+    plt.tight_layout()
     if display == True:
         plt.show()
     elif display == False and img_save_dir is not None:
@@ -570,7 +577,7 @@ def evaluate_full_sig(model, dataset_org, orbital, atom=1, display=True, img_sav
         plt.savefig(img_save_dir + f"/{orbital}_full_sig.pdf")
 
 
-def evaluate_full_sig_legendre(model, dataset_org, orbital, atom=0, display=True, img_save_dir = None):
+def evaluate_full_sig_legendre(model, dataset_org, orbital, N=3, atom=0, display=True, img_save_dir = None):
     r"""
     Evaluate the :math:`\Sigma(i\omega_n)` of model on a dataset 
 
@@ -599,8 +606,8 @@ def evaluate_full_sig_legendre(model, dataset_org, orbital, atom=0, display=True
     model.eval()
     iws = dataset[0].iws.detach().cpu().numpy()[0]
 
-    N1 = 3
-    N2 = 3
+    N1 = N
+    N2 = N
     fig, axs = plt.subplots(N1, N2)
 
     colors_gt = ["lightcoral", "firebrick", "lightsalmon", "saddlebrown"]
@@ -627,15 +634,20 @@ def evaluate_full_sig_legendre(model, dataset_org, orbital, atom=0, display=True
                 axs[i,j].plot(iws, sig.imag, c="black")
                 axs[i,j].plot(iws, output.imag, c="blue", marker='o', markersize=2)
 
-    ### Code for adding common x and y labels ###  
-    # fig.add_subplot(111, frameon=False)
-    # plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
-    # plt.xlabel("i$\omega_n$", labelpad=5, fontsize=25)
-    # plt.ylabel("$\Sigma$(i$\omega_n$)", labelpad=20, fontsize=25)
 
     handles, labels = axs[0,0].get_legend_handles_labels()
     fig.legend(handles, labels, loc="upper right")
-    # plt.tight_layout()
+
+    ### Code for adding common x and y labels ###  
+    # fig.add_subplot(111, frameon=False)
+    # plt.tick_params(labelcolor='none', which='both', top=False, bottom=False, left=False, right=False)
+    # plt.xlabel("i$\omega_n$", labelpad=10, fontsize=20)
+    # plt.ylabel("$\Sigma$(i$\omega_n$)", labelpad=20, fontsize=20)
+    # plt.tight_layout(pad=0)
+
+    fig.supxlabel("i$\omega_n$", fontsize=30)
+    fig.supylabel("$\Sigma$(i$\omega_n$)", fontsize=30)
+
     if display == True:
         plt.show()
     elif display == False and img_save_dir is not None:
@@ -766,7 +778,7 @@ def assert_sig_conditions(sig_text):
     return passed
 
 
-def build_data(atoms, sig_texts=None, efs=None, radial_cutoff=3.0, device="cpu"):
+def build_data(atoms, leg_lmax=30, sig_texts=None, efs=None, radial_cutoff=3.0, device="cpu"):
     r"""
     Build a dataset from a list of atoms and optional self-energy text files and fermi energies
 
@@ -807,7 +819,7 @@ def build_data(atoms, sig_texts=None, efs=None, radial_cutoff=3.0, device="cpu")
         if efs is not None:
             tef = efs[i]
         if passed:
-            adata = build_datapoint(atoms[i], type_encoding, type_onehot, am_onehot, tsig_text, tef, radial_cutoff, device=device)
+            adata = build_datapoint(atoms[i], type_encoding, type_onehot, am_onehot, tsig_text, tef, radial_cutoff, leg_lmax, device=device)
             all_data.append(adata)
         else:
             print("Skipping atom", i, "due to not satisfying self-energy conditions")
